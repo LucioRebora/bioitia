@@ -2,16 +2,17 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/Button";
+import { LogOut } from "lucide-react";
 
 export function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
+    const { data: session } = useSession();
 
     useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 20);
-        };
+        const handleScroll = () => setIsScrolled(window.scrollY > 20);
         window.addEventListener("scroll", handleScroll);
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
@@ -28,7 +29,26 @@ export function Navbar() {
                     bioitia<span className="text-zinc-400">.</span>
                 </Link>
                 <div className="flex items-center space-x-4">
-                    <Button size="sm">Ingresar</Button>
+                    {session ? (
+                        <>
+                            <Link href="/admin">
+                                <Button size="sm" variant="secondary">Panel Admin</Button>
+                            </Link>
+                            <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => signOut({ callbackUrl: "/" })}
+                                className="flex items-center gap-2"
+                            >
+                                <LogOut size={15} />
+                                Salir
+                            </Button>
+                        </>
+                    ) : (
+                        <Link href="/login">
+                            <Button size="sm">Ingresar</Button>
+                        </Link>
+                    )}
                 </div>
             </div>
         </nav>
