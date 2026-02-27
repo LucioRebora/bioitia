@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 import fs from "fs";
 import path from "path";
 
@@ -28,24 +28,14 @@ export async function generateBudgetPDF(budget: any) {
     console.error("Error cargando el logo:", error);
   }
 
-  let options = {};
+  let options: any = {};
 
   if (isProd) {
-    const remoteExecutablePath = `https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar`;
-
     options = {
-      args: [
-        ...chromium.args,
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-gpu',
-        '--no-zygote',
-        '--single-process',
-      ],
-      defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(remoteExecutablePath),
-      headless: chromium.headless,
+      args: chromium.args,
+      defaultViewport: { width: 1920, height: 1080 },
+      executablePath: await chromium.executablePath(),
+      headless: true,
       ignoreHTTPSErrors: true,
     };
   } else {
