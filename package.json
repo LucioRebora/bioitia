@@ -12,7 +12,6 @@
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
-    "@sparticuz/chromium": "123.0.1",
     "@sparticuz/chromium-min": "^123.0.1",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
