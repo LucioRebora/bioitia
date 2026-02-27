@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import {
     Home,
     Users,
@@ -14,6 +14,7 @@ import {
     LogOut,
     CreditCard,
     Receipt,
+    UserCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,19 +35,20 @@ const navItems = [
         icon: FlaskConical,
     },
     {
-        label: "Usuarios",
-        href: "/admin/users",
-        icon: Users,
-    },
-    {
         label: "Planes",
         href: "/admin/planes",
         icon: CreditCard,
+    },
+    {
+        label: "Usuarios",
+        href: "/admin/users",
+        icon: Users,
     },
 ];
 
 
 export function Sidebar() {
+    const { data: session } = useSession();
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
 
@@ -121,26 +123,40 @@ export function Sidebar() {
             </nav>
 
             {/* Footer */}
-            <div className="px-3 pb-6 space-y-1 shrink-0 border-t border-zinc-100 dark:border-zinc-900 pt-4">
-                <button
-                    onClick={() => signOut({ callbackUrl: "/login" })}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-zinc-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 dark:hover:text-red-400 transition-all duration-150"
-                >
-                    <LogOut size={19} className="shrink-0" />
-                    <AnimatePresence>
+            <div className="px-3 pb-6 shrink-0 border-t border-zinc-100 dark:border-zinc-900 pt-4">
+                <div className={cn(
+                    "flex items-center gap-2 px-2 py-2 rounded-2xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50",
+                    collapsed ? "flex-col py-4 gap-4" : "flex-row"
+                )}>
+                    {/* User Info */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700 shadow-sm">
+                            <UserCircle size={20} className="text-zinc-500" />
+                        </div>
                         {!collapsed && (
-                            <motion.span
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                exit={{ opacity: 0 }}
-                                transition={{ duration: 0.1 }}
-                                className="text-sm font-medium whitespace-nowrap"
-                            >
-                                Salir
-                            </motion.span>
+                            <div className="flex flex-col min-w-0">
+                                <span className="text-xs font-bold text-zinc-900 dark:text-zinc-100 truncate">
+                                    {session?.user?.name || "Usuario"}
+                                </span>
+                                <span className="text-[10px] text-zinc-500 truncate">
+                                    {session?.user?.email}
+                                </span>
+                            </div>
                         )}
-                    </AnimatePresence>
-                </button>
+                    </div>
+
+                    {/* Logout Button */}
+                    <button
+                        onClick={() => signOut({ callbackUrl: "/login" })}
+                        title="Cerrar sesión"
+                        className={cn(
+                            "flex items-center justify-center p-2 rounded-xl text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:text-rose-600 dark:hover:text-rose-400 transition-all duration-150",
+                            collapsed ? "w-full" : "shrink-0"
+                        )}
+                    >
+                        <LogOut size={18} />
+                    </button>
+                </div>
             </div>
 
             {/* Collapse toggle */}

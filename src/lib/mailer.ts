@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -16,11 +16,14 @@ export async function generateBudgetPDF(budget: any) {
   let options = {};
 
   if (isProd) {
-    // In production (Vercel), we use sparticuz/chromium
+    // In production (Vercel), we use sparticuz/chromium-min
+    // We point to a remote graphics heavy binary to avoid Vercel's size limits
+    const remoteExecutablePath = `https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar`;
+
     options = {
       args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       defaultViewport: chromium.defaultViewport,
-      executablePath: await chromium.executablePath(),
+      executablePath: await chromium.executablePath(remoteExecutablePath),
       headless: chromium.headless === 'shell' ? true : chromium.headless,
       ignoreHTTPSErrors: true,
     };
