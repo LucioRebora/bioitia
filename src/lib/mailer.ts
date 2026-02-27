@@ -16,14 +16,16 @@ export async function generateBudgetPDF(budget: any) {
   let options = {};
 
   if (isProd) {
+    // In production (Vercel), we use sparticuz/chromium
     options = {
-      args: chromium.args,
+      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(),
-      headless: chromium.headless,
+      headless: chromium.headless === 'shell' ? true : chromium.headless,
       ignoreHTTPSErrors: true,
     };
   } else {
+    // In local development
     options = {
       args: ['--no-sandbox', '--disable-setuid-sandbox'],
       executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',

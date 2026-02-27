@@ -56,7 +56,7 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="text-center mb-10">
                     <h1 className="text-3xl font-bold tracking-tight">
-                        bioitia<span className="text-zinc-400">.</span>
+                        bio.itia
                     </h1>
                     <p className="text-zinc-500 mt-2 text-sm">Sistema de Gestión para Laboratorios Bioquímicos</p>
                 </div>
@@ -71,7 +71,7 @@ export default function LoginPage() {
                             <input
                                 {...register("email")}
                                 type="email"
-                                placeholder="admin@bioitia.com"
+                                placeholder="admin@bio.itia.ar"
                                 autoComplete="email"
                                 className={cn(
                                     "w-full h-12 bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-2xl px-4 outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400 transition-all text-sm placeholder:text-zinc-400",

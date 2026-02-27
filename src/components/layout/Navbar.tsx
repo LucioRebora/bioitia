@@ -26,7 +26,7 @@ export function Navbar() {
         >
             <div className="max-w-7xl mx-auto flex items-center justify-between">
                 <Link href="/" className="text-2xl font-bold tracking-tight">
-                    bioitia<span className="text-zinc-400">.</span>
+                    bio.itia
                 </Link>
                 <div className="flex items-center space-x-4">
                     {session ? (

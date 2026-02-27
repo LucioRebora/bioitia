@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut } from "next-auth/react";
 import {
-    LayoutDashboard,
+    Home,
     Users,
     FlaskConical,
     ChevronLeft,
@@ -19,14 +19,14 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
     {
-        label: "Dashboard",
+        label: "Inicio",
         href: "/admin",
-        icon: LayoutDashboard,
+        icon: Home,
     },
     {
-        label: "Usuarios",
-        href: "/admin/users",
-        icon: Users,
+        label: "Presupuestos",
+        href: "/admin/presupuestos",
+        icon: Receipt,
     },
     {
         label: "Estudios",
@@ -34,14 +34,14 @@ const navItems = [
         icon: FlaskConical,
     },
     {
+        label: "Usuarios",
+        href: "/admin/users",
+        icon: Users,
+    },
+    {
         label: "Planes",
         href: "/admin/planes",
         icon: CreditCard,
-    },
-    {
-        label: "Presupuestos",
-        href: "/admin/presupuestos",
-        icon: Receipt,
     },
 ];
 
@@ -58,20 +58,28 @@ export function Sidebar() {
         >
             {/* Logo */}
             <div className="flex items-center h-16 px-5 border-b border-zinc-100 dark:border-zinc-900 shrink-0">
-                <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
-                    <div className="w-8 h-8 bg-black dark:bg-white rounded-xl flex items-center justify-center shrink-0">
-                        <span className="text-white dark:text-black font-bold text-xs">B</span>
-                    </div>
-                    <AnimatePresence>
-                        {!collapsed && (
+                <Link href="/admin" className="flex items-center min-h-[2rem]">
+                    <AnimatePresence mode="wait">
+                        {!collapsed ? (
                             <motion.span
+                                key="full-logo"
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -8 }}
                                 transition={{ duration: 0.15 }}
-                                className="font-bold text-lg tracking-tight whitespace-nowrap"
+                                className="font-bold text-xl tracking-tight whitespace-nowrap text-emerald-500"
                             >
-                                bioitia<span className="text-zinc-400">.</span>
+                                bio.itia
+                            </motion.span>
+                        ) : (
+                            <motion.span
+                                key="small-logo"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                className="font-bold text-xl text-emerald-500"
+                            >
+                                b.
                             </motion.span>
                         )}
                     </AnimatePresence>

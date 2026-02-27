@@ -1,14 +1,14 @@
-import { LayoutDashboard } from "lucide-react";
-
-export default function AdminDashboard() {
+export default function AdminPage() {
     return (
-        <div className="p-8">
-            <div className="flex items-center gap-3 mb-8">
-                <LayoutDashboard size={22} className="text-zinc-400" />
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-            </div>
-            <div className="glass-card rounded-4xl p-10 text-center text-zinc-400">
-                <p className="text-sm">Panel en construcción. Selecciona un módulo del sidebar.</p>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] px-4 text-center">
+            <div className="space-y-4">
+                <h1 className="text-5xl font-extrabold tracking-tighter text-zinc-900 dark:text-zinc-50 sm:text-6xl">
+                    bienvenidos a <span className="text-emerald-500">bio.itia</span>
+                </h1>
+                <p className="text-lg text-zinc-500 font-medium tracking-wide">
+                    Sistema de Gestión para Laboratorios Bioquímicos
+                </p>
+                <div className="h-1 w-20 bg-emerald-500 mx-auto rounded-full opacity-50" />
             </div>
         </div>
     );

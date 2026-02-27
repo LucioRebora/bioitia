@@ -7,7 +7,7 @@ export default function Home() {
       <Navbar />
       <main className="flex-grow flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight">bioitia<span className="text-zinc-400">.</span></h1>
+          <h1 className="text-4xl font-bold tracking-tight text-emerald-500">bio.itia</h1>
           <p className="text-zinc-500 mt-4 font-light tracking-wide uppercase text-sm">Sistema de Gestión para Laboratorios Bioquímicos</p>
         </div>
 

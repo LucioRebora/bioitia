@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "bioitia | Gestión de Laboratorios Bioquímicos",
+  title: "bio.itia | Gestión de Laboratorios Bioquímicos",
   description: "Plataforma integral y moderna para el manejo eficiente de laboratorios bioquímicos.",
 };
 

@@ -42,7 +42,7 @@ export function BioitiaWordmark({
         <div className={`flex items-center gap-2.5 ${className}`}>
             <BioitiaLogo size={28} />
             <span className="font-bold text-xl tracking-tight">
-                bioitia<span className="opacity-30">.</span>
+                bio.itia
             </span>
         </div>
     );
