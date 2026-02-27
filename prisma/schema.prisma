@@ -13,15 +13,69 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Plan {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  nbu       Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  budgets     Budget[]
+  budgetItems BudgetItem[]
+}
+
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String?
   role      String   @default("USER")
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model Study {
+  id           String   @id @default(cuid())
+  codigo       Int      @unique
+  determinacion String
+  urgencia     Boolean  @default(false)
+  ref          String?
+  ub           Float
+  frecuencia   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  budgetItems  BudgetItem[]
+}
+
+model Budget {
+  id          String       @id @default(cuid())
+  paciente    String?
+  telefono    String?
+  email       String?
+  total       Float
+  planId      String?
+  plan        Plan?        @relation(fields: [planId], references: [id])
+  items       BudgetItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model BudgetItem {
+  id        String   @id @default(cuid())
+  budgetId  String
+  budget    Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  studyId   String
+  study     Study    @relation(fields: [studyId], references: [id])
+  planId    String
+  plan      Plan     @relation(fields: [planId], references: [id])
+  planNombre String
+  codigo    Int
+  nombre    String
+  ub        Float
+  valor     Float
+}
+
+
 
 
 

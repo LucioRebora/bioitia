@@ -8,9 +8,12 @@ import { signOut } from "next-auth/react";
 import {
     LayoutDashboard,
     Users,
+    FlaskConical,
     ChevronLeft,
     ChevronRight,
     LogOut,
+    CreditCard,
+    Receipt,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +28,23 @@ const navItems = [
         href: "/admin/users",
         icon: Users,
     },
+    {
+        label: "Estudios",
+        href: "/admin/estudios",
+        icon: FlaskConical,
+    },
+    {
+        label: "Planes",
+        href: "/admin/planes",
+        icon: CreditCard,
+    },
+    {
+        label: "Presupuestos",
+        href: "/admin/presupuestos",
+        icon: Receipt,
+    },
 ];
+
 
 export function Sidebar() {
     const pathname = usePathname();

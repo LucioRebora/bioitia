@@ -2,6 +2,15 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
+const USER_SELECT = {
+    id: true,
+    email: true,
+    name: true,
+    role: true,
+    active: true,
+    createdAt: true,
+} as const;
+
 export async function PATCH(
     req: Request,
     { params }: { params: Promise<{ id: string }> }
@@ -9,20 +18,21 @@ export async function PATCH(
     try {
         const { id } = await params;
         const body = await req.json();
-        const { name, email, role, password } = body;
+        const { name, email, role, password, active } = body;
 
-        const data: Record<string, string> = {};
+        const data: Record<string, string | boolean> = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
         if (role !== undefined) data.role = role;
-        if (password && password.length > 0) {
+        if (active !== undefined) data.active = Boolean(active);
+        if (password && String(password).length > 0) {
             data.password = await bcrypt.hash(password, 12);
         }
 
         const user = await prisma.user.update({
             where: { id },
             data,
-            select: { id: true, email: true, name: true, role: true, createdAt: true },
+            select: USER_SELECT,
         });
 
         return NextResponse.json(user);
