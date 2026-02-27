@@ -21,10 +21,18 @@ export async function generateBudgetPDF(budget: any) {
     const remoteExecutablePath = `https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar`;
 
     options = {
-      args: [...chromium.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      args: [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process',
+      ],
       defaultViewport: chromium.defaultViewport,
       executablePath: await chromium.executablePath(remoteExecutablePath),
-      headless: chromium.headless === 'shell' ? true : chromium.headless,
+      headless: chromium.headless,
       ignoreHTTPSErrors: true,
     };
   } else {
