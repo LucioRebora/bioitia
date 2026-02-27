@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium-min";
+import chromium from "@sparticuz/chromium";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -11,7 +11,6 @@ export const transporter = nodemailer.createTransport({
 });
 
 export async function generateBudgetPDF(budget: any) {
-  // Configuración para Vercel vs Local
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 
   let options = {};
@@ -19,8 +18,9 @@ export async function generateBudgetPDF(budget: any) {
   if (isProd) {
     options = {
       args: chromium.args,
-      executablePath: await (chromium as any).executablePath('https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'),
-      headless: true,
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
       ignoreHTTPSErrors: true,
     };
   } else {
