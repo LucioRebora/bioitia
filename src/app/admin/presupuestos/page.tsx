@@ -60,16 +60,16 @@ export default function AdminBudgetsPage() {
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
-                a.download = `Presupuesto_${budget.paciente?.replace(/\s+/g, "_") || "LB_Lab"}.pdf`;
+                a.download = `Presupuesto_${budget.paciente?.replace(/\s+/g, "_") || "LB_Lab"}.html`;
                 document.body.appendChild(a);
                 a.click();
                 window.URL.revokeObjectURL(url);
                 document.body.removeChild(a);
             } else {
-                alert("Error al intentar descargar el PDF.");
+                alert("Error al intentar descargar el HTML.");
             }
         } catch (error) {
-            alert("Error de conexión al intentar descargar el PDF.");
+            alert("Error de conexión al intentar descargar el HTML.");
         } finally {
             setDownloadLoading(null);
         }
@@ -405,7 +405,7 @@ export default function AdminBudgetsPage() {
                                         ) : (
                                             <Download size={16} />
                                         )}
-                                        Descargar PDF
+                                        Descargar
                                     </button>
                                     <button
                                         onClick={() => handleSendEmail(selectedBudget)}

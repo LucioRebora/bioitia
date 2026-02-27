@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { generateBudgetPDF } from "@/lib/mailer";
+import { generateBudgetHTML } from "@/lib/mailer";
 
 export async function GET(
     _req: Request,
@@ -35,19 +35,19 @@ export async function GET(
         `;
         budget.items = items;
 
-        // Generar el PDF
-        const pdfBuffer = await generateBudgetPDF(budget);
+        // Generar el HTML
+        const htmlContent = generateBudgetHTML(budget);
 
-        // Crear una respuesta con el PDF asegurando que sea un Uint8Array para la Response
-        return new Response(new Uint8Array(pdfBuffer), {
+        // Crear una respuesta con el HTML
+        return new Response(htmlContent, {
             headers: {
-                "Content-Type": "application/pdf",
-                "Content-Disposition": `attachment; filename="Presupuesto_${budget.paciente?.replace(/\s+/g, '_') || 'LB_Lab'}.pdf"`,
+                "Content-Type": "text/html; charset=utf-8",
+                "Content-Disposition": `attachment; filename="Presupuesto_${budget.paciente?.replace(/\s+/g, '_') || 'LB_Lab'}.html"`,
                 "Cache-Control": "no-store, max-age=0",
             },
         });
     } catch (error) {
         console.error("GET /api/budgets/[id]/download-pdf Error:", error);
-        return NextResponse.json({ error: "Error al generar el PDF" }, { status: 500 });
+        return NextResponse.json({ error: "Error al generar el archivo HTML" }, { status: 500 });
     }
 }
