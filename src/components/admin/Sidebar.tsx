@@ -15,6 +15,8 @@ import {
     CreditCard,
     Receipt,
     UserCircle,
+    Settings,
+    ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,19 +32,25 @@ const navItems = [
         icon: Receipt,
     },
     {
-        label: "Estudios",
-        href: "/admin/estudios",
-        icon: FlaskConical,
-    },
-    {
-        label: "Planes",
-        href: "/admin/planes",
-        icon: CreditCard,
-    },
-    {
-        label: "Usuarios",
-        href: "/admin/users",
-        icon: Users,
+        label: "Configuraciones",
+        icon: Settings,
+        subItems: [
+            {
+                label: "Estudios",
+                href: "/admin/estudios",
+                icon: FlaskConical,
+            },
+            {
+                label: "Planes",
+                href: "/admin/planes",
+                icon: CreditCard,
+            },
+            {
+                label: "Usuarios",
+                href: "/admin/users",
+                icon: Users,
+            },
+        ],
     },
 ];
 
@@ -51,6 +59,7 @@ export function Sidebar() {
     const { data: session } = useSession();
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
+    const [configOpen, setConfigOpen] = useState(true);
 
     return (
         <motion.aside
@@ -91,9 +100,76 @@ export function Sidebar() {
             {/* Navigation */}
             <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
                 {navItems.map((item) => {
-                    const isActive = pathname === item.href;
+                    const hasSubItems = !!item.subItems;
+                    const isActive = item.href ? pathname === item.href : false;
+                    const isAnySubItemActive = item.subItems?.some(si => pathname === si.href);
+
+                    if (hasSubItems) {
+                        return (
+                            <div key={item.label} className="space-y-1">
+                                <button
+                                    onClick={() => !collapsed && setConfigOpen(!configOpen)}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150 group cursor-pointer",
+                                        isAnySubItemActive && collapsed
+                                            ? "bg-black dark:bg-white text-white dark:text-black"
+                                            : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-black dark:hover:text-white"
+                                    )}
+                                >
+                                    <item.icon size={19} className="shrink-0" />
+                                    {!collapsed && (
+                                        <>
+                                            <span className="text-sm font-medium flex-1 text-left whitespace-nowrap">
+                                                {item.label}
+                                            </span>
+                                            <motion.div
+                                                animate={{ rotate: configOpen ? 180 : 0 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <ChevronDown size={14} className="opacity-50" />
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </button>
+
+                                <AnimatePresence>
+                                    {!collapsed && configOpen && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: "auto", opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            transition={{ duration: 0.2 }}
+                                            className="overflow-hidden flex flex-col gap-1 pl-4"
+                                        >
+                                            {item.subItems?.map((sub) => {
+                                                const isSubActive = pathname === sub.href;
+                                                return (
+                                                    <Link key={sub.href} href={sub.href}>
+                                                        <div
+                                                            className={cn(
+                                                                "flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-150 cursor-pointer",
+                                                                isSubActive
+                                                                    ? "text-emerald-500 font-bold"
+                                                                    : "text-zinc-400 hover:text-black dark:hover:text-white"
+                                                            )}
+                                                        >
+                                                            <sub.icon size={16} className="shrink-0" />
+                                                            <span className="text-sm whitespace-nowrap">
+                                                                {sub.label}
+                                                            </span>
+                                                        </div>
+                                                    </Link>
+                                                );
+                                            })}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+                        );
+                    }
+
                     return (
-                        <Link key={item.href} href={item.href}>
+                        <Link key={item.href} href={item.href!}>
                             <div
                                 className={cn(
                                     "flex items-center gap-3 px-3 py-2.5 rounded-2xl transition-all duration-150 group cursor-pointer",
@@ -159,7 +235,7 @@ export function Sidebar() {
                 </div>
                 <div className="mt-2 px-2 flex justify-center">
                     <span className="text-[10px] font-mono text-zinc-400 opacity-50">
-                        v1.0.5
+                        v1.0.6
                     </span>
                 </div>
             </div>
