@@ -235,7 +235,7 @@ export function Sidebar() {
                 </div>
                 <div className="mt-2 px-2 flex justify-center">
                     <span className="text-[10px] font-mono text-zinc-400 opacity-50">
-                        v1.1.12
+                        v1.1.14
                     </span>
                 </div>
             </div>
