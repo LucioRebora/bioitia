@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { jsPDF } from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -11,14 +11,13 @@ export const transporter = nodemailer.createTransport({
 });
 
 export async function generateBudgetPDF(budget: any) {
-  // @ts-ignore - jspdf-autotable adds autoTable to jsPDF
   const doc = new jsPDF();
 
   // Colores
-  const primaryColor = [26, 32, 44]; // #1a202c
-  const secondaryColor = [113, 128, 150]; // #718096
+  const primaryColor = [26, 32, 44] as [number, number, number]; // #1a202c
+  const secondaryColor = [113, 128, 150] as [number, number, number]; // #718096
 
-  // Logo y Cabecera (Texto en lugar de imagen para evitar problemas de carga en Vercel)
+  // Logo y Cabecera
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
   doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
@@ -62,8 +61,7 @@ export async function generateBudgetPDF(budget: any) {
     `$${item.valor.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
   ]);
 
-  // @ts-ignore
-  doc.autoTable({
+  autoTable(doc, {
     startY: 75,
     head: [['Estudio / Análisis Clínico', 'Costo']],
     body: tableRows,
@@ -77,8 +75,7 @@ export async function generateBudgetPDF(budget: any) {
   });
 
   // Total
-  // @ts-ignore
-  const finalY = doc.lastAutoTable.finalY + 15;
+  const finalY = (doc as any).lastAutoTable.finalY + 15;
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
   doc.text("TOTAL:", 130, finalY);
