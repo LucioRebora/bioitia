@@ -10,7 +10,7 @@ export const transporter = nodemailer.createTransport({
   },
 });
 
-async function generateBudgetPDF(budget: any) {
+export async function generateBudgetPDF(budget: any) {
   // Configuración para Vercel vs Local
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 

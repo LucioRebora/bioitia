@@ -16,6 +16,7 @@ export async function GET(
                 b."email", 
                 b."total", 
                 b."planId", 
+                b."sentAt",
                 b."createdAt", 
                 b."updatedAt",
                 p."nombre" as "planNombre"

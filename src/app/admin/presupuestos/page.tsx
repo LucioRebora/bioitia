@@ -21,6 +21,7 @@ interface Budget {
     email: string | null;
     total: number;
     planNombre: string;
+    sentAt: string | null;
     createdAt: string;
     items?: BudgetItem[];
 }
@@ -34,6 +35,7 @@ export default function AdminBudgetsPage() {
     const [detailsLoading, setDetailsLoading] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
     const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
+    const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
 
     const load = useCallback(async (q = "") => {
         setLoading(true);
@@ -53,6 +55,30 @@ export default function AdminBudgetsPage() {
         return () => clearTimeout(t);
     }, [search, load]);
 
+    const handleDownloadPDF = async (budget: Budget) => {
+        setDownloadLoading(budget.id);
+        try {
+            const res = await fetch(`/api/budgets/${budget.id}/download-pdf`);
+            if (res.ok) {
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Presupuesto_${budget.paciente?.replace(/\s+/g, "_") || "LB_Lab"}.pdf`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } else {
+                alert("Error al intentar descargar el PDF.");
+            }
+        } catch (error) {
+            alert("Error de conexión al intentar descargar el PDF.");
+        } finally {
+            setDownloadLoading(null);
+        }
+    };
+
     const handleSendEmail = async (budget: Budget) => {
         if (!budget.email) {
             alert("Este presupuesto no tiene un email cargado.");
@@ -62,10 +88,18 @@ export default function AdminBudgetsPage() {
         setSendingEmailId(budget.id);
         try {
             const res = await fetch(`/api/budgets/${budget.id}/send-email`, { method: "POST" });
+            const data = await res.json();
+
             if (res.ok) {
+                const now = data.sentAt || new Date().toISOString();
+                // Actualizar en la lista local
+                setBudgets(prev => prev.map(b => b.id === budget.id ? { ...b, sentAt: now } : b));
+                // Actualizar en el modal si está abierto
+                if (selectedBudget?.id === budget.id) {
+                    setSelectedBudget(prev => prev ? { ...prev, sentAt: now } : null);
+                }
                 alert("Email enviado correctamente a " + budget.email);
             } else {
-                const data = await res.json();
                 alert("Error: " + (data.error || "No se pudo enviar el email"));
             }
         } catch (error) {
@@ -100,12 +134,12 @@ export default function AdminBudgetsPage() {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('es-AR', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
+        return new Date(dateStr).toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
         });
     };
 
@@ -149,6 +183,7 @@ export default function AdminBudgetsPage() {
                                     <th className="px-5 py-4 font-semibold text-zinc-500">Paciente</th>
                                     <th className="px-5 py-4 font-semibold text-zinc-500">Plan</th>
                                     <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Total</th>
+                                    <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Enviado</th>
                                     <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Fecha</th>
                                     <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Acciones</th>
                                 </tr>
@@ -176,7 +211,22 @@ export default function AdminBudgetsPage() {
                                             <td className="px-5 py-3 text-right font-bold text-zinc-700 dark:text-zinc-200">
                                                 ${budget.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
                                             </td>
-                                            <td className="px-5 py-3 text-center text-zinc-500 text-xs">
+                                            <td className="px-5 py-3 text-center">
+                                                {budget.sentAt ? (
+                                                    <div className="flex flex-col items-center gap-0.5" title={formatDate(budget.sentAt)}>
+                                                        <div className="flex items-center gap-1 text-blue-500 font-bold text-[10px] uppercase">
+                                                            <Mail size={10} />
+                                                            Enviado
+                                                        </div>
+                                                        <span className="text-[9px] text-zinc-400 font-medium">
+                                                            {new Date(budget.sentAt).toLocaleDateString('es-AR')}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-zinc-300">-</span>
+                                                )}
+                                            </td>
+                                            <td className="px-5 py-3 text-center text-zinc-500 text-xs text-nowrap">
                                                 <div className="flex items-center justify-center gap-1.5">
                                                     <Calendar size={12} />
                                                     {formatDate(budget.createdAt)}
@@ -276,8 +326,10 @@ export default function AdminBudgetsPage() {
                                             <p className="text-sm font-medium">{formatDate(selectedBudget.createdAt)}</p>
                                         </div>
                                         <div className="space-y-1">
-                                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Plan Base</span>
-                                            <p className="text-sm font-medium">{selectedBudget.planNombre || "Personalizado"}</p>
+                                            <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Último Envío</span>
+                                            <p className={`text-sm font-medium ${selectedBudget.sentAt ? "text-blue-500 font-bold" : "text-zinc-400"}`}>
+                                                {selectedBudget.sentAt ? formatDate(selectedBudget.sentAt) : "No enviado"}
+                                            </p>
                                         </div>
                                         <div className="space-y-1 text-right">
                                             <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Total</span>
@@ -319,10 +371,16 @@ export default function AdminBudgetsPage() {
                                 {/* Footer Actions */}
                                 <div className="p-6 bg-zinc-50 dark:bg-zinc-800/50 border-t border-zinc-100 dark:border-zinc-800 flex justify-end gap-3">
                                     <button
-                                        onClick={() => window.print()}
-                                        className="h-11 px-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-colors flex items-center gap-2"
+                                        onClick={() => handleDownloadPDF(selectedBudget)}
+                                        disabled={downloadLoading === selectedBudget.id}
+                                        className="h-11 px-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 text-sm font-medium hover:bg-white dark:hover:bg-zinc-800 transition-colors flex items-center gap-2 disabled:opacity-50"
                                     >
-                                        <Download size={16} /> Descargar PDF
+                                        {downloadLoading === selectedBudget.id ? (
+                                            <Loader2 size={16} className="animate-spin" />
+                                        ) : (
+                                            <Download size={16} />
+                                        )}
+                                        Descargar PDF
                                     </button>
                                     <button
                                         onClick={() => handleSendEmail(selectedBudget)}

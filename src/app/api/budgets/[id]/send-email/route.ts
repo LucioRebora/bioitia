@@ -40,7 +40,14 @@ export async function POST(
         // Enviar el email
         await sendBudgetEmail({ ...budget, items });
 
-        return NextResponse.json({ success: true });
+        // Registrar fecha de envío
+        await prisma.$executeRaw`
+            UPDATE "Budget"
+            SET "sentAt" = NOW()
+            WHERE "id" = ${id}
+        `;
+
+        return NextResponse.json({ success: true, sentAt: new Date() });
     } catch (error: any) {
         console.error("POST /api/budgets/[id]/send-email Error:", error);
         return NextResponse.json({ error: error.message || "Error al enviar el email" }, { status: 500 });

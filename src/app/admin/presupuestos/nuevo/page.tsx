@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
-import { Receipt, Search, Plus, Trash2, Save, ArrowLeft, FlaskConical, ShieldCheck, Loader2 } from "lucide-react";
+import { Receipt, Search, Plus, Trash2, Save, ArrowLeft, FlaskConical, ShieldCheck, Loader2, Mail } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -39,6 +39,7 @@ export default function NewBudgetPage() {
     const [searchStudy, setSearchStudy] = useState("");
     const [loading, setLoading] = useState(false);
     const [saving, setSaving] = useState(false);
+    const [sending, setSending] = useState(false);
 
     // Load plans
     useEffect(() => {
@@ -61,16 +62,30 @@ export default function NewBudgetPage() {
 
     const activeDefaultPlan = plans.find(p => p.id === defaultPlanId);
 
+    const changePlanForItem = useCallback((itemId: string, planId: string) => {
+        const plan = plans.find(p => p.id === planId);
+        if (!plan) return;
+
+        setSelectedStudies(prev => prev.map(s => {
+            if (s.id === itemId) {
+                return {
+                    ...s,
+                    planId: plan.id,
+                    planNombre: plan.nombre,
+                    nbu: plan.nbu,
+                    valor: s.ub * plan.nbu
+                };
+            }
+            return s;
+        }));
+    }, [plans]);
+
     // Auto-add "Acto Bioquímico" (660001) when a default plan is selected
     useEffect(() => {
         if (!defaultPlanId || !activeDefaultPlan) return;
 
         const addActoBioquimico = async () => {
             const exists = selectedStudies.find(s => s.codigo === 660001);
-
-            // Si ya existe, solo actualizamos su plan/valor al nuevo default si el usuario lo desea
-            // o simplemente lo dejamos. Lo más intuitivo es que si cambia el default, también se 
-            // actualice el Acto Bioquímico si fue agregado automáticamente.
             if (exists) {
                 changePlanForItem(exists.id, defaultPlanId);
                 return;
@@ -97,7 +112,7 @@ export default function NewBudgetPage() {
         };
 
         addActoBioquimico();
-    }, [defaultPlanId, activeDefaultPlan]);
+    }, [defaultPlanId, activeDefaultPlan, changePlanForItem]);
 
     const addStudy = (study: Study) => {
         if (!defaultPlanId) {
@@ -120,34 +135,22 @@ export default function NewBudgetPage() {
         setStudies([]);
     };
 
-    const changePlanForItem = (itemId: string, planId: string) => {
-        const plan = plans.find(p => p.id === planId);
-        if (!plan) return;
-
-        setSelectedStudies(prev => prev.map(s => {
-            if (s.id === itemId) {
-                return {
-                    ...s,
-                    planId: plan.id,
-                    planNombre: plan.nombre,
-                    nbu: plan.nbu,
-                    valor: s.ub * plan.nbu
-                };
-            }
-            return s;
-        }));
-    };
-
     const removeStudy = (id: string) => {
         setSelectedStudies(prev => prev.filter(s => s.id !== id));
     };
 
     const total = selectedStudies.reduce((acc, s) => acc + s.valor, 0);
 
-    const handleSave = async () => {
+    const handleSave = async (andSend = false) => {
         if (selectedStudies.length === 0) return;
+        if (andSend && !email) {
+            alert("Para enviar el presupuesto se requiere un email.");
+            return;
+        }
 
         setSaving(true);
+        if (andSend) setSending(true);
+
         try {
             const res = await fetch("/api/budgets", {
                 method: "POST",
@@ -156,7 +159,7 @@ export default function NewBudgetPage() {
                     paciente,
                     telefono,
                     email,
-                    planId: defaultPlanId || null, // Guardamos el plan base si hay uno
+                    planId: defaultPlanId || null,
                     total,
                     items: selectedStudies.map(s => ({
                         studyId: s.id,
@@ -171,11 +174,26 @@ export default function NewBudgetPage() {
             });
 
             if (res.ok) {
+                const data = await res.json();
+                const budgetId = data.id;
+
+                if (andSend) {
+                    const sendRes = await fetch(`/api/budgets/${budgetId}/send-email`, { method: "POST" });
+                    if (!sendRes.ok) {
+                        alert("Presupuesto guardado pero hubo un error al enviar el email.");
+                    }
+                }
+
                 router.push("/admin/presupuestos");
                 router.refresh();
+            } else {
+                alert("Error al guardar el presupuesto.");
             }
+        } catch (error) {
+            alert("Error de conexión al servidor.");
         } finally {
             setSaving(false);
+            setSending(false);
         }
     };
 
@@ -189,17 +207,27 @@ export default function NewBudgetPage() {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight">Nuevo Presupuesto</h1>
-                        <p className="text-sm text-zinc-500 font-medium">Generá una cotización personalizada por determinación</p>
+                        <p className="text-sm text-zinc-500 font-medium tracking-tight">Cruce de determinaciones y planes</p>
                     </div>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving || selectedStudies.length === 0}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50"
-                >
-                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    Guardar Presupuesto
-                </button>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => handleSave(false)}
+                        disabled={saving || selectedStudies.length === 0}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-2xl text-sm font-semibold hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
+                    >
+                        {saving && !sending ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                        Guardar
+                    </button>
+                    <button
+                        onClick={() => handleSave(true)}
+                        disabled={saving || selectedStudies.length === 0}
+                        className="inline-flex items-center gap-2 px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-2xl text-sm font-semibold hover:bg-zinc-800 dark:hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                    >
+                        {sending ? <Loader2 size={16} className="animate-spin" /> : <Mail size={16} />}
+                        Guardar y Enviar
+                    </button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
