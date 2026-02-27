@@ -1,0 +1,12 @@
+{
+    "functions": {
+        "src/app/api/budgets/[id]/download-pdf/route.ts": {
+            "memory": 1024,
+            "maxDuration": 30
+        },
+        "src/app/api/budgets/[id]/send-email/route.ts": {
+            "memory": 1024,
+            "maxDuration": 30
+        }
+    }
+}

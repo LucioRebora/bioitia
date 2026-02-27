@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
-import { jsPDF } from "jspdf";
-import autoTable from "jspdf-autotable";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium-min";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -11,89 +11,140 @@ export const transporter = nodemailer.createTransport({
 });
 
 export async function generateBudgetPDF(budget: any) {
-  const doc = new jsPDF();
+  const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 
-  // Colores
-  const primaryColor = [26, 32, 44] as [number, number, number]; // #1a202c
-  const secondaryColor = [113, 128, 150] as [number, number, number]; // #718096
+  let options = {};
 
-  // Logo y Cabecera
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("LB LAB", 20, 25);
+  if (isProd) {
+    const remoteExecutablePath = `https://github.com/Sparticuz/chromium/releases/download/v123.0.1/chromium-v123.0.1-pack.tar`;
 
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  doc.text("Bolivar 1002 | Tel: 3446-434574", 20, 32);
-  doc.text("laboratorio@lblab.com.ar", 20, 37);
+    options = {
+      args: [
+        ...chromium.args,
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-gpu',
+        '--no-zygote',
+        '--single-process',
+      ],
+      defaultViewport: chromium.defaultViewport,
+      executablePath: await chromium.executablePath(remoteExecutablePath),
+      headless: chromium.headless,
+      ignoreHTTPSErrors: true,
+    };
+  } else {
+    options = {
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      headless: true,
+    };
+  }
 
-  // Cuadro de Presupuesto
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(14);
-  doc.setTextColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-  doc.text("PRESUPUESTO", 140, 25);
+  const browser = await puppeteer.launch(options);
+  const page = await browser.newPage();
 
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  const fecha = new Date(budget.createdAt).toLocaleDateString('es-AR');
-  doc.text(`Fecha: ${fecha}`, 140, 32);
+  const itemsHtml = budget.items
+    .map(
+      (item: any) => `
+    <tr style="border-bottom: 1px solid #edf2f7;">
+      <td style="padding: 12px; font-size: 14px; color: #2d3748; font-weight: 500;">${item.nombre}</td>
+      <td style="padding: 12px; font-size: 14px; color: #2d3748; text-align: right; font-weight: bold;">$${item.valor.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</td>
+    </tr>
+  `
+    )
+    .join("");
 
-  // Línea divisoria
-  doc.setDrawColor(237, 242, 247);
-  doc.line(20, 45, 190, 45);
+  const pdfHtml = `
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        body { font-family: Helvetica, Arial, sans-serif; padding: 40px; color: #2d3748; }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; border-bottom: 2px solid #1a202c; padding-bottom: 20px; }
+        .logo { height: 70px; }
+        .budget-info { text-align: right; }
+        .budget-info h1 { margin: 0; font-size: 24px; color: #1a202c; }
+        .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 30px; background: #f8fafc; border-radius: 8px; overflow: hidden; }
+        .info-grid td { padding: 15px; font-size: 13px; border: 1px solid #edf2f7; }
+        .table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        .table th { background: #1a202c; color: white; padding: 12px; font-size: 12px; text-transform: uppercase; text-align: left; }
+        .table td { padding: 12px; border-bottom: 1px solid #edf2f7; font-size: 14px; }
+        .total-section { text-align: right; margin-top: 20px; }
+        .total-box { display: inline-block; background: #1a202c; color: white; padding: 20px 40px; border-radius: 8px; }
+        .footer { margin-top: 60px; border-top: 1px solid #edf2f7; padding-top: 20px; font-size: 11px; color: #718096; line-height: 1.6; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <div style="display: flex; gap: 20px; align-items: center;">
+          <img src="https://www.lblab.com.ar/img/logo-lblab.png" class="logo">
+          <div style="font-size: 10px; color: #718096; line-height: 1.4; border-left: 1px solid #edf2f7; padding-left: 20px;">
+            <p style="margin: 0;"><strong>Dirección:</strong> Bolivar 1002</p>
+            <p style="margin: 0;"><strong>Teléfono:</strong> 3446 - 434574</p>
+            <p style="margin: 0;"><strong>Whatsapp:</strong> 3446 - 330365</p>
+            <p style="margin: 0;"><strong>E-mail:</strong> laboratorio@lblab.com.ar</p>
+            <p style="margin: 0;"><strong>Web:</strong> www.lblab.com.ar</p>
+          </div>
+        </div>
+        <div class="budget-info">
+          <h1 style="margin: 0; font-size: 14px; color: #1a202c; text-transform: uppercase; letter-spacing: 1px;">PRESUPUESTO</h1>
+          <p style="margin: 3px 0 0; font-size: 10px; color: #718096;"><strong>Fecha de emisión:</strong> ${new Date(budget.createdAt).toLocaleDateString('es-AR')} ${new Date(budget.createdAt).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })} hs</p>
+        </div>
+      </div>
 
-  // Info del Paciente
-  doc.setFontSize(10);
-  doc.setFont("helvetica", "bold");
-  doc.text("Detalles del Paciente:", 20, 55);
+      <table class="info-grid">
+        <tr>
+          <td><strong>Paciente:</strong> ${budget.paciente || "-"}</td>
+          <td><strong>Teléfono:</strong> ${budget.telefono || "-"}</td>
+        </tr>
+        <tr>
+          <td><strong>Email:</strong> ${budget.email || "-"}</td>
+          <td><strong>Lista:</strong> ${budget.planNombre || "Personalizada"}</td>
+        </tr>
+      </table>
 
-  doc.setFont("helvetica", "normal");
-  doc.text(`Paciente: ${budget.paciente || "N/A"}`, 20, 62);
-  doc.text(`Email: ${budget.email || "N/A"}`, 20, 67);
-  doc.text(`Plan: ${budget.planNombre || "Personalizado"}`, 120, 62);
-  doc.text(`Teléfono: ${budget.telefono || "N/A"}`, 120, 67);
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Estudio / Análisis Clínico</th>
+            <th style="text-align: right;">Costo</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${itemsHtml}
+        </tbody>
+      </table>
 
-  // Tabla de Estudios
-  const tableRows = budget.items.map((item: any) => [
-    item.nombre,
-    `$${item.valor.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`
-  ]);
+      <div class="total-section">
+        <div class="total-box">
+          <span style="font-size: 14px; opacity: 0.8;">TOTAL</span><br>
+          <span style="font-size: 28px; font-weight: bold;">$${budget.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+        </div>
+      </div>
 
-  autoTable(doc, {
-    startY: 75,
-    head: [['Estudio / Análisis Clínico', 'Costo']],
-    body: tableRows,
-    theme: 'striped',
-    headStyles: { fillColor: primaryColor, fontSize: 10, fontStyle: 'bold' },
-    columnStyles: {
-      0: { cellWidth: 130 },
-      1: { cellWidth: 40, halign: 'right' }
-    },
-    styles: { font: "helvetica", fontSize: 9 }
+      <div class="footer">
+        <p>• Este presupuesto tiene validez por 30 días.</p>
+        <p>• Los valores incluyen IVA.</p>
+        <p>• Los precios están sujetos a modificaciones sin previo aviso.</p>
+        <p>• La atención domiciliaria incluye viáticos según zona.</p>
+        <br>
+        <p style="font-weight: bold;">LB LAB – Comprometidos con la calidad y la seguridad en Analisis Clinicos</p>
+      </div>
+    </body>
+    </html>
+  `;
+
+  await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    printBackground: true,
+    margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
   });
 
-  // Total
-  const finalY = (doc as any).lastAutoTable.finalY + 15;
-  doc.setFontSize(12);
-  doc.setFont("helvetica", "bold");
-  doc.text("TOTAL:", 130, finalY);
-  doc.setFontSize(16);
-  doc.text(`$${budget.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}`, 190, finalY, { align: 'right' });
-
-  // Footer
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(secondaryColor[0], secondaryColor[1], secondaryColor[2]);
-  const footerY = 260;
-  doc.text("• Este presupuesto tiene validez por 30 días.", 20, footerY);
-  doc.text("• Los valores incluyen IVA.", 20, footerY + 5);
-  doc.text("• LB LAB – Comprometidos con la calidad y la seguridad.", 20, footerY + 15);
-
-  // Retornar como Buffer para nodemailer
-  const arrayBuffer = doc.output("arraybuffer");
-  return Buffer.from(arrayBuffer);
+  await browser.close();
+  return pdfBuffer;
 }
 
 export const sendBudgetEmail = async (budget: any) => {
@@ -120,7 +171,7 @@ export const sendBudgetEmail = async (budget: any) => {
     attachments: [
       {
         filename: `Presupuesto_${budget.paciente?.replace(/\s+/g, '_') || 'LB_Lab'}.pdf`,
-        content: pdfBuffer,
+        content: Buffer.from(pdfBuffer),
         contentType: 'application/pdf'
       }
     ]

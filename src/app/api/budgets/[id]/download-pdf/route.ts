@@ -38,11 +38,12 @@ export async function GET(
         // Generar el PDF
         const pdfBuffer = await generateBudgetPDF(budget);
 
-        // Crear una respuesta con el PDF
-        return new Response(Buffer.from(pdfBuffer), {
+        // Crear una respuesta con el PDF asegurando que sea un Uint8Array para la Response
+        return new Response(new Uint8Array(pdfBuffer), {
             headers: {
                 "Content-Type": "application/pdf",
                 "Content-Disposition": `attachment; filename="Presupuesto_${budget.paciente?.replace(/\s+/g, '_') || 'LB_Lab'}.pdf"`,
+                "Cache-Control": "no-store, max-age=0",
             },
         });
     } catch (error) {
