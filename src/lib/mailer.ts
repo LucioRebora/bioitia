@@ -1,6 +1,8 @@
 import nodemailer from "nodemailer";
 import puppeteer from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
+import fs from "fs";
+import path from "path";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -12,6 +14,19 @@ export const transporter = nodemailer.createTransport({
 
 export async function generateBudgetPDF(budget: any) {
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+
+  // Cargar logo desde el proyecto
+  let logoBase64 = "";
+  try {
+    const logoRelPath = 'public/img/presupuestos/logo-lblab.png';
+    const logoPath = path.join(process.cwd(), logoRelPath);
+    if (fs.existsSync(logoPath)) {
+      const buffer = fs.readFileSync(logoPath);
+      logoBase64 = `data:image/png;base64,${buffer.toString('base64')}`;
+    }
+  } catch (error) {
+    console.error("Error cargando el logo:", error);
+  }
 
   let options = {};
 
@@ -79,7 +94,7 @@ export async function generateBudgetPDF(budget: any) {
     <body>
       <div class="header">
         <div style="display: flex; gap: 20px; align-items: center;">
-          <img src="https://www.lblab.com.ar/img/logo-lblab.png" class="logo">
+          <img src="${logoBase64}" class="logo">
           <div style="font-size: 10px; color: #718096; line-height: 1.4; border-left: 1px solid #edf2f7; padding-left: 20px;">
             <p style="margin: 0;"><strong>Dirección:</strong> Bolivar 1002</p>
             <p style="margin: 0;"><strong>Teléfono:</strong> 3446 - 434574</p>
