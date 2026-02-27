@@ -8,14 +8,14 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const editUserSchema = z.object({
+const userSchema = z.object({
     name: z.string().min(1, "El nombre es requerido"),
     email: z.string().email("Email inválido"),
-    role: z.enum(["USER", "ADMIN"]),
+    role: z.enum(["USER", "ADMIN", "SECRETARY"]),
     password: z.string().optional(),
 });
 
-type EditUserValues = z.infer<typeof editUserSchema>;
+type UserValues = z.infer<typeof userSchema>;
 
 export interface User {
     id: string;
@@ -34,49 +34,72 @@ interface EditUserModalProps {
 }
 
 export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalProps) {
+    const isEditing = !!user;
+
     const {
         register,
         handleSubmit,
         reset,
         formState: { errors, isSubmitting },
-    } = useForm<EditUserValues>({
-        resolver: zodResolver(editUserSchema),
+    } = useForm<UserValues>({
+        resolver: zodResolver(userSchema),
     });
 
-    // Populate form when user changes
+    // Populate form when user changes or modal opens for new user
     useEffect(() => {
-        if (user) {
-            reset({
-                name: user.name ?? "",
-                email: user.email,
-                role: user.role as "USER" | "ADMIN",
-                password: "",
-            });
+        if (open) {
+            if (user) {
+                reset({
+                    name: user.name ?? "",
+                    email: user.email,
+                    role: user.role as any,
+                    password: "",
+                });
+            } else {
+                reset({
+                    name: "",
+                    email: "",
+                    role: "USER",
+                    password: "",
+                });
+            }
         }
-    }, [user, reset]);
+    }, [user, open, reset]);
 
-    const onSubmit = async (data: EditUserValues) => {
-        if (!user) return;
-
+    const onSubmit = async (data: UserValues) => {
         const payload: Record<string, string> = {
             name: data.name,
             email: data.email,
             role: data.role,
         };
+
         if (data.password && data.password.length > 0) {
             payload.password = data.password;
+        } else if (!isEditing) {
+            alert("La contraseña es requerida para nuevos usuarios");
+            return;
         }
 
-        const res = await fetch(`/api/users/${user.id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-        });
+        const url = isEditing ? `/api/users/${user.id}` : "/api/users";
+        const method = isEditing ? "PATCH" : "POST";
 
-        if (res.ok) {
-            const updated = await res.json();
-            onSaved(updated);
-            onClose();
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            });
+
+            if (res.ok) {
+                const result = await res.json();
+                onSaved(result);
+                onClose();
+            } else {
+                const err = await res.json();
+                alert("Error: " + (err.error || "No se pudo guardar el usuario"));
+            }
+        } catch (error) {
+            alert("Error de conexión al servidor");
         }
     };
 
@@ -90,7 +113,7 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
 
     return (
         <AnimatePresence>
-            {open && user && (
+            {open && (
                 <>
                     {/* Backdrop */}
                     <motion.div
@@ -116,8 +139,10 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                             {/* Header */}
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-xl font-bold">Editar Usuario</h2>
-                                    <p className="text-sm text-zinc-500 mt-0.5">{user.email}</p>
+                                    <h2 className="text-xl font-bold">{isEditing ? "Editar Usuario" : "Nuevo Usuario"}</h2>
+                                    <p className="text-sm text-zinc-500 mt-0.5">
+                                        {isEditing ? user.email : "Crea una nueva cuenta de acceso"}
+                                    </p>
                                 </div>
                                 <button
                                     onClick={onClose}
@@ -163,6 +188,7 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                         className={inputClass(!!errors.role)}
                                     >
                                         <option value="USER">Usuario</option>
+                                        <option value="SECRETARY">Secretario/a</option>
                                         <option value="ADMIN">Administrador</option>
                                     </select>
                                 </div>

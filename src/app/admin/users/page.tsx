@@ -31,8 +31,14 @@ export default function AdminUsersPage() {
         setModalOpen(true);
     };
 
-    const handleSaved = (updated: User) => {
-        setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    const handleSaved = (saved: User) => {
+        setUsers((prev) => {
+            const exists = prev.some((u) => u.id === saved.id);
+            if (exists) {
+                return prev.map((u) => (u.id === saved.id ? saved : u));
+            }
+            return [saved, ...prev];
+        });
     };
 
     const toggleActive = async (user: User) => {
@@ -110,8 +116,8 @@ export default function AdminUsersPage() {
                                             </td>
                                             <td className="px-8 py-4">
                                                 <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${user.active
-                                                        ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"
-                                                        : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
+                                                    ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"
+                                                    : "bg-zinc-100 dark:bg-zinc-800 text-zinc-500"
                                                     }`}>
                                                     <span className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500" : "bg-zinc-400"}`} />
                                                     {user.active ? "Activo" : "Inactivo"}
@@ -136,8 +142,8 @@ export default function AdminUsersPage() {
                                                         disabled={actionLoading === user.id + "-toggle"}
                                                         title={user.active ? "Inactivar" : "Activar"}
                                                         className={`w-8 h-8 flex items-center justify-center rounded-xl transition-colors ${user.active
-                                                                ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                                                                : "text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                                                            ? "text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                                            : "text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
                                                             }`}
                                                     >
                                                         {user.active ? <PowerOff size={14} /> : <Power size={14} />}

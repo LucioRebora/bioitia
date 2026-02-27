@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -10,9 +11,15 @@ export const transporter = nodemailer.createTransport({
 });
 
 async function generateBudgetPDF(budget: any) {
+  // Configuración para Vercel vs Local
+  const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
+
   const browser = await puppeteer.launch({
+    args: isProd ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
+    executablePath: isProd
+      ? await chromium.executablePath()
+      : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
   const page = await browser.newPage();
 
