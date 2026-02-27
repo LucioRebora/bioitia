@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import puppeteer from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 
 export const transporter = nodemailer.createTransport({
   service: "gmail",
@@ -14,13 +14,24 @@ export async function generateBudgetPDF(budget: any) {
   // Configuración para Vercel vs Local
   const isProd = process.env.NODE_ENV === 'production' || !!process.env.VERCEL;
 
-  const browser = await puppeteer.launch({
-    args: isProd ? chromium.args : ['--no-sandbox', '--disable-setuid-sandbox'],
-    executablePath: isProd
-      ? await chromium.executablePath()
-      : 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
-    headless: true,
-  });
+  let options = {};
+
+  if (isProd) {
+    options = {
+      args: chromium.args,
+      executablePath: await (chromium as any).executablePath('https://github.com/Sparticuz/chromium/releases/download/v131.0.1/chromium-v131.0.1-pack.tar'),
+      headless: true,
+      ignoreHTTPSErrors: true,
+    };
+  } else {
+    options = {
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+      headless: true,
+    };
+  }
+
+  const browser = await puppeteer.launch(options);
   const page = await browser.newPage();
 
   const itemsHtml = budget.items

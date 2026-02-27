@@ -5,26 +5,34 @@ export async function GET(req: Request) {
     try {
         const { searchParams } = new URL(req.url);
         const q = searchParams.get("q") ?? "";
+        const date = searchParams.get("date") ?? "";
         const query = `%${q}%`;
 
         // Obtener presupuestos (planId es opcional en Budget)
-        const budgets = await prisma.$queryRaw`
-            SELECT 
-                b."id", 
-                b."paciente", 
-                b."telefono", 
-                b."email", 
-                b."total", 
-                b."planId", 
-                b."sentAt",
-                b."createdAt", 
-                b."updatedAt",
-                p."nombre" as "planNombre"
-            FROM "Budget" b
-            LEFT JOIN "Plan" p ON b."planId" = p.id
-            WHERE b."paciente" ILIKE ${query} OR p."nombre" ILIKE ${query}
-            ORDER BY b."createdAt" DESC
-        `;
+        let budgets;
+
+        if (date) {
+            budgets = await prisma.$queryRaw`
+                SELECT 
+                    b."id", b."paciente", b."telefono", b."email", b."total", b."planId", b."sentAt", b."createdAt", b."updatedAt",
+                    p."nombre" as "planNombre"
+                FROM "Budget" b
+                LEFT JOIN "Plan" p ON b."planId" = p.id
+                WHERE (b."paciente" ILIKE ${query} OR p."nombre" ILIKE ${query})
+                AND b."createdAt"::date = ${date}::date
+                ORDER BY b."createdAt" DESC
+            `;
+        } else {
+            budgets = await prisma.$queryRaw`
+                SELECT 
+                    b."id", b."paciente", b."telefono", b."email", b."total", b."planId", b."sentAt", b."createdAt", b."updatedAt",
+                    p."nombre" as "planNombre"
+                FROM "Budget" b
+                LEFT JOIN "Plan" p ON b."planId" = p.id
+                WHERE b."paciente" ILIKE ${query} OR p."nombre" ILIKE ${query}
+                ORDER BY b."createdAt" DESC
+            `;
+        }
 
         return NextResponse.json(budgets);
     } catch (error) {

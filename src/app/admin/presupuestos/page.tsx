@@ -30,6 +30,7 @@ export default function AdminBudgetsPage() {
     const [budgets, setBudgets] = useState<Budget[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [selectedDate, setSelectedDate] = useState("");
     const [confirmDelete, setConfirmDelete] = useState<Budget | null>(null);
     const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
     const [detailsLoading, setDetailsLoading] = useState(false);
@@ -37,10 +38,10 @@ export default function AdminBudgetsPage() {
     const [sendingEmailId, setSendingEmailId] = useState<string | null>(null);
     const [downloadLoading, setDownloadLoading] = useState<string | null>(null);
 
-    const load = useCallback(async (q = "") => {
+    const load = useCallback(async (q = "", date = "") => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/budgets?q=${encodeURIComponent(q)}`);
+            const res = await fetch(`/api/budgets?q=${encodeURIComponent(q)}&date=${date}`);
             const data = await res.json();
             setBudgets(data);
         } finally {
@@ -48,12 +49,7 @@ export default function AdminBudgetsPage() {
         }
     }, []);
 
-    useEffect(() => { load(); }, [load]);
-
-    useEffect(() => {
-        const t = setTimeout(() => load(search), 300);
-        return () => clearTimeout(t);
-    }, [search, load]);
+    useEffect(() => { load(search, selectedDate); }, [load, search, selectedDate]);
 
     const handleDownloadPDF = async (budget: Budget) => {
         setDownloadLoading(budget.id);
@@ -134,12 +130,13 @@ export default function AdminBudgetsPage() {
     };
 
     const formatDate = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString("es-AR", {
+        return new Date(dateStr).toLocaleString("es-AR", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
             hour: "2-digit",
             minute: "2-digit",
+            hour12: false,
         });
     };
 
@@ -161,15 +158,36 @@ export default function AdminBudgetsPage() {
                     </Link>
                 </div>
 
-                {/* Search */}
-                <div className="relative mb-6 max-w-sm">
-                    <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Buscar por paciente o plan..."
-                        className="w-full h-11 pl-10 pr-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400 transition-all placeholder:text-zinc-400"
-                    />
+                {/* Search & Filters */}
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                    <div className="relative flex-1 max-w-sm">
+                        <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar por paciente o plan..."
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400 transition-all placeholder:text-zinc-400"
+                        />
+                    </div>
+
+                    <div className="relative w-full md:w-48">
+                        <Calendar size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" />
+                        <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="w-full h-11 pl-10 pr-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400 transition-all text-zinc-600 dark:text-zinc-300"
+                        />
+                    </div>
+
+                    {selectedDate && (
+                        <button
+                            onClick={() => setSelectedDate("")}
+                            className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 hover:text-zinc-900 transition-colors"
+                        >
+                            Limpiar fecha
+                        </button>
+                    )}
                 </div>
 
                 {/* Table */}
@@ -219,7 +237,13 @@ export default function AdminBudgetsPage() {
                                                             Enviado
                                                         </div>
                                                         <span className="text-[9px] text-zinc-400 font-medium">
-                                                            {new Date(budget.sentAt).toLocaleDateString('es-AR')}
+                                                            {new Date(budget.sentAt).toLocaleString('es-AR', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit',
+                                                                hour12: false
+                                                            })}
                                                         </span>
                                                     </div>
                                                 ) : (
