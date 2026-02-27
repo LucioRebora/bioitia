@@ -157,6 +157,11 @@ export function Sidebar() {
                         <LogOut size={18} />
                     </button>
                 </div>
+                <div className="mt-2 px-2 flex justify-center">
+                    <span className="text-[10px] font-mono text-zinc-400 opacity-50">
+                        v1.0.4
+                    </span>
+                </div>
             </div>
 
             {/* Collapse toggle */}

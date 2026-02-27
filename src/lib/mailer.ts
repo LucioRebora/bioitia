@@ -131,11 +131,12 @@ export async function generateBudgetPDF(budget: any) {
     </html>
   `;
 
-  await page.setContent(pdfHtml, { waitUntil: 'networkidle0' });
+  await page.setContent(pdfHtml, { waitUntil: 'load' });
   const pdfBuffer = await page.pdf({
     format: 'A4',
     printBackground: true,
-    margin: { top: '20px', bottom: '20px', left: '20px', right: '20px' }
+    preferCSSPageSize: true,
+    margin: { top: '30px', bottom: '30px', left: '30px', right: '30px' }
   });
 
   await browser.close();
