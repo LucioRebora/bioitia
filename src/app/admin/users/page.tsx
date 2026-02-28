@@ -95,6 +95,7 @@ export default function AdminUsersPage() {
                                     <th className="px-8 py-4 font-semibold text-zinc-500">Email</th>
                                     <th className="px-8 py-4 font-semibold text-zinc-500">Rol</th>
                                     <th className="px-8 py-4 font-semibold text-zinc-500">Estado</th>
+                                    <th className="px-8 py-4 font-semibold text-zinc-500">Laboratorio</th>
                                     <th className="px-8 py-4 font-semibold text-zinc-500">Fecha</th>
                                     <th className="px-8 py-4 font-semibold text-zinc-500 text-right">Acciones</th>
                                 </tr>
@@ -122,6 +123,9 @@ export default function AdminUsersPage() {
                                                     <span className={`w-1.5 h-1.5 rounded-full ${user.active ? "bg-emerald-500" : "bg-zinc-400"}`} />
                                                     {user.active ? "Activo" : "Inactivo"}
                                                 </span>
+                                            </td>
+                                            <td className="px-8 py-4 text-zinc-500 font-medium">
+                                                {user.laboratory?.nombre || "—"}
                                             </td>
                                             <td className="px-8 py-4 text-zinc-500">
                                                 {new Date(user.createdAt).toLocaleDateString("es-AR")}
@@ -162,7 +166,7 @@ export default function AdminUsersPage() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan={6} className="p-20 text-center text-zinc-400">
+                                        <td colSpan={7} className="p-20 text-center text-zinc-400">
                                             No hay usuarios registrados.
                                         </td>
                                     </tr>

@@ -11,6 +11,12 @@ const USER_SELECT = {
     role: true,
     active: true,
     createdAt: true,
+    laboratory: {
+        select: {
+            id: true,
+            nombre: true,
+        },
+    },
 } as const;
 
 export async function GET() {
@@ -39,6 +45,10 @@ export async function POST(req: Request) {
 
         const body = await req.json();
         const { email, name, role, password, laboratoryId } = body;
+
+        if (role === "ADMIN" && session.user.role !== "ADMIN") {
+            return new NextResponse("Unauthorized to assign ADMIN role", { status: 403 });
+        }
 
         // Use the user's laboratoryId unless they are ADMIN specifying one
         const assignedLaboratoryId = session.user.role === "ADMIN" && laboratoryId

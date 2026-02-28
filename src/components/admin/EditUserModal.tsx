@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +12,7 @@ import { cn } from "@/lib/utils";
 const userSchema = z.object({
     name: z.string().min(1, "El nombre es requerido"),
     email: z.string().email("Email inválido"),
-    role: z.enum(["USER", "LAB_ADMIN", "SECRETARY", "ADMIN"]),
+    role: z.enum(["USER", "LAB_ADMIN", "ADMIN"]),
     password: z.string().optional(),
 });
 
@@ -24,6 +25,10 @@ export interface User {
     role: string;
     active: boolean;
     createdAt: string;
+    laboratory?: {
+        id: string;
+        nombre: string;
+    };
 }
 
 interface EditUserModalProps {
@@ -34,6 +39,7 @@ interface EditUserModalProps {
 }
 
 export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalProps) {
+    const { data: session } = useSession();
     const isEditing = !!user;
 
     const {
@@ -188,9 +194,10 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                         className={inputClass(!!errors.role)}
                                     >
                                         <option value="USER">Usuario (Por defecto)</option>
-                                        <option value="SECRETARY">Secretario</option>
                                         <option value="LAB_ADMIN">Laboratorio Admin</option>
-                                        <option value="ADMIN">Administrador</option>
+                                        {session?.user?.role === "ADMIN" && (
+                                            <option value="ADMIN">Administrador</option>
+                                        )}
                                     </select>
                                 </div>
 

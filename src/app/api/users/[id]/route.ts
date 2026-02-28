@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const USER_SELECT = {
     id: true,
@@ -9,6 +11,12 @@ const USER_SELECT = {
     role: true,
     active: true,
     createdAt: true,
+    laboratory: {
+        select: {
+            id: true,
+            nombre: true,
+        },
+    },
 } as const;
 
 export async function PATCH(
@@ -17,8 +25,15 @@ export async function PATCH(
 ) {
     try {
         const { id } = await params;
+        const session = await getServerSession(authOptions);
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
         const body = await req.json();
         const { name, email, role, password, active } = body;
+
+        if (role === "ADMIN" && session.user.role !== "ADMIN") {
+            return new NextResponse("Unauthorized to assign ADMIN role", { status: 403 });
+        }
 
         const data: Record<string, string | boolean> = {};
         if (name !== undefined) data.name = name;
@@ -48,6 +63,17 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params;
+        const session = await getServerSession(authOptions);
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
+        // optionally: ensure LAB_ADMIN can only delete their own lab's users
+        if (session.user.role !== "ADMIN") {
+            const userToDelete = await prisma.user.findUnique({ where: { id } });
+            if (!userToDelete || userToDelete.laboratoryId !== session.user.laboratoryId) {
+                return new NextResponse("Unauthorized to delete this user", { status: 403 });
+            }
+        }
+
         await prisma.user.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error) {
