@@ -36,14 +36,15 @@ const navItems = [
         icon: Receipt,
     },
     {
+        label: "Laboratorios",
+        href: "/admin/laboratorios",
+        icon: Building2,
+        adminOnly: true,
+    },
+    {
         label: "Configuraciones",
         icon: Settings,
         subItems: [
-            {
-                label: "Laboratorios",
-                href: "/admin/laboratorios",
-                icon: Building2,
-            },
             {
                 label: "Estudios",
                 href: "/admin/estudios",
@@ -235,10 +236,12 @@ export function Sidebar() {
 
                 {/* Navigation */}
                 <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
-                    {navItems.map((item) => {
+                    {navItems.map((item: any) => {
+                        if (item.adminOnly && session?.user?.role !== 'ADMIN') return null;
+
                         const hasSubItems = !!item.subItems;
                         const isActive = item.href ? pathname === item.href : false;
-                        const isAnySubItemActive = item.subItems?.some(si => pathname === si.href);
+                        const isAnySubItemActive = item.subItems?.some((si: any) => pathname === si.href);
 
                         if (hasSubItems) {
                             return (
@@ -277,7 +280,7 @@ export function Sidebar() {
                                                 transition={{ duration: 0.2 }}
                                                 className="overflow-hidden flex flex-col gap-1 pl-4"
                                             >
-                                                {item.subItems?.map((sub) => {
+                                                {item.subItems?.map((sub: any) => {
                                                     const isSubActive = pathname === sub.href;
                                                     return (
                                                         <Link key={sub.href} href={sub.href}>
