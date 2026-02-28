@@ -56,12 +56,15 @@ export function PlanModal({ plan, open, onClose, onSaved }: PlanModalProps) {
         const url = isEdit ? `/api/plans/${plan!.id}` : "/api/plans";
         const method = isEdit ? "PATCH" : "POST";
 
+        const labId = localStorage.getItem('selectedLaboratoryId') || '';
+
         const res = await fetch(url, {
             method,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 ...data,
                 nbu: Number(data.nbu),
+                labId
             }),
         });
 

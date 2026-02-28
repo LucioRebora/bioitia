@@ -43,7 +43,8 @@ export default function NewBudgetPage() {
 
     // Load plans
     useEffect(() => {
-        fetch("/api/plans").then(res => res.json()).then(setPlans);
+        const labId = localStorage.getItem('selectedLaboratoryId') || '';
+        fetch(`/api/plans?labId=${labId}`).then(res => res.json()).then(setPlans);
     }, []);
 
     // Load studies (debounced search)
@@ -160,6 +161,7 @@ export default function NewBudgetPage() {
                     telefono,
                     email,
                     planId: defaultPlanId || null,
+                    labId: localStorage.getItem('selectedLaboratoryId') || '',
                     total,
                     items: selectedStudies.map(s => ({
                         studyId: s.id,

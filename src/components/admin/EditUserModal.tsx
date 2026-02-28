@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 const userSchema = z.object({
     name: z.string().min(1, "El nombre es requerido"),
     email: z.string().email("Email inválido"),
-    role: z.enum(["USER", "ADMIN", "SECRETARY"]),
+    role: z.enum(["USER", "LAB_ADMIN", "SECRETARY", "ADMIN"]),
     password: z.string().optional(),
 });
 
@@ -187,8 +187,9 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                         {...register("role")}
                                         className={inputClass(!!errors.role)}
                                     >
-                                        <option value="USER">Usuario</option>
-                                        <option value="SECRETARY">Secretario/a</option>
+                                        <option value="USER">Usuario (Por defecto)</option>
+                                        <option value="SECRETARY">Secretario</option>
+                                        <option value="LAB_ADMIN">Laboratorio Admin</option>
                                         <option value="ADMIN">Administrador</option>
                                     </select>
                                 </div>

@@ -17,7 +17,8 @@ export default function AdminPlansPage() {
     const load = useCallback(async (q = "") => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/plans?q=${encodeURIComponent(q)}`);
+            const labId = localStorage.getItem('selectedLaboratoryId') || '';
+            const res = await fetch(`/api/plans?q=${encodeURIComponent(q)}&labId=${labId}`);
             const data = await res.json();
             setPlans(data);
         } finally {

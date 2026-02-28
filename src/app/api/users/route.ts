@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 const USER_SELECT = {
     id: true,
@@ -13,7 +15,13 @@ const USER_SELECT = {
 
 export async function GET() {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
+        const whereClause = session.user.role === "ADMIN" ? {} : { laboratoryId: session.user.laboratoryId };
+
         const users = await prisma.user.findMany({
+            where: whereClause as any,
             select: USER_SELECT,
             orderBy: { createdAt: "desc" },
         });
@@ -26,12 +34,20 @@ export async function GET() {
 
 export async function POST(req: Request) {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
         const body = await req.json();
-        const { email, name, role, password } = body;
+        const { email, name, role, password, laboratoryId } = body;
+
+        // Use the user's laboratoryId unless they are ADMIN specifying one
+        const assignedLaboratoryId = session.user.role === "ADMIN" && laboratoryId
+            ? laboratoryId
+            : session.user.laboratoryId;
 
         const hashed = await bcrypt.hash(password, 12);
         const user = await prisma.user.create({
-            data: { email, name, role: role || "USER", password: hashed },
+            data: { email, name, role: role || "USER", password: hashed, laboratoryId: assignedLaboratoryId } as any,
             select: USER_SELECT,
         });
 

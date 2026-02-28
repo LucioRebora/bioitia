@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
+import { useEffect } from "react";
 import {
     Home,
     Users,
@@ -19,6 +20,7 @@ import {
     ChevronDown,
     Menu,
     X,
+    Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,11 @@ const navItems = [
         label: "Configuraciones",
         icon: Settings,
         subItems: [
+            {
+                label: "Laboratorios",
+                href: "/admin/laboratorios",
+                icon: Building2,
+            },
             {
                 label: "Estudios",
                 href: "/admin/estudios",
@@ -63,10 +70,50 @@ export function Sidebar() {
     const [collapsed, setCollapsed] = useState(false);
     const [configOpen, setConfigOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
+    const [labs, setLabs] = useState<any[]>([]);
+    const [activeLabId, setActiveLabId] = useState<string>("");
 
-    React.useEffect(() => {
+    useEffect(() => {
         setMobileOpen(false);
     }, [pathname]);
+
+    useEffect(() => {
+        if (!session?.user) return;
+
+        const fetchLabs = async () => {
+            try {
+                const res = await fetch('/api/laboratories');
+                const data = await res.json();
+                setLabs(Array.isArray(data) ? data : []);
+            } catch (error) {
+                console.error("Error fetching labs:", error);
+            }
+        };
+
+        fetchLabs();
+
+        // Load initially selected laboratory for Admin, or set the default one
+        const savedLab = localStorage.getItem('selectedLaboratoryId');
+        if (session.user.role === 'ADMIN') {
+            if (savedLab) {
+                setActiveLabId(savedLab);
+            }
+        } else {
+            setActiveLabId(session.user.laboratoryId || "");
+        }
+    }, [session]);
+
+    const handleLabChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const val = e.target.value;
+        setActiveLabId(val);
+        localStorage.setItem('selectedLaboratoryId', val);
+        window.dispatchEvent(new Event('laboratoryChanged'));
+        // Optional: reload the page to refresh data in other components
+        window.location.reload();
+    };
+
+    const isAdmin = session?.user?.role === 'ADMIN';
+    const userLab = labs.find((l) => l.id === (isAdmin ? activeLabId : session?.user?.laboratoryId));
 
     return (
         <>
@@ -144,6 +191,47 @@ export function Sidebar() {
                         </AnimatePresence>
                     </Link>
                 </div>
+
+                {/* Laboratory Selector / Info */}
+                {session?.user && (
+                    <div className={cn("px-4 py-3 border-b border-zinc-100 dark:border-zinc-900 shrink-0", collapsed && "hidden md:block px-2 text-center")}>
+                        {collapsed ? (
+                            <div className="w-8 h-8 mx-auto bg-zinc-100 dark:bg-zinc-900 rounded-xl flex items-center justify-center text-xs font-bold text-zinc-500 overflow-hidden" title={userLab?.nombre || "N/A"}>
+                                {userLab?.logo ? (
+                                    <img src={userLab.logo} alt={userLab.nombre} className="w-full h-full object-cover" />
+                                ) : (
+                                    userLab?.nombre?.charAt(0) || <Building2 size={14} />
+                                )}
+                            </div>
+                        ) : isAdmin ? (
+                            <div className="flex flex-col gap-1.5">
+                                <select
+                                    className="w-full h-9 px-3 bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-zinc-900 dark:focus:ring-zinc-400 font-medium cursor-pointer"
+                                    value={activeLabId}
+                                    onChange={handleLabChange}
+                                >
+                                    <option value="" disabled>Seleccionar laboratorio...</option>
+                                    {labs.map((lab) => (
+                                        <option key={lab.id} value={lab.id}>{lab.nombre}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                    {userLab?.logo ? (
+                                        <img src={userLab.logo} alt="Logo" className="w-6 h-6 rounded border border-zinc-200 dark:border-zinc-800 object-cover shrink-0" />
+                                    ) : (
+                                        <Building2 size={14} className="text-zinc-500 shrink-0" />
+                                    )}
+                                    <span className="text-sm font-bold text-zinc-700 dark:text-zinc-200 truncate">
+                                        {userLab?.nombre || "Sin Asignar"}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Navigation */}
                 <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">

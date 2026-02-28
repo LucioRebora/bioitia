@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion } from "framer-motion";
 import { Loader2, LogIn } from "lucide-react";
+import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
 
 const loginSchema = z.object({
@@ -125,6 +126,24 @@ export default function LoginPage() {
                             )}
                         </button>
                     </form>
+
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center">
+                            <div className="w-full border-t border-zinc-200 dark:border-zinc-800"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                            <span className="px-2 bg-white dark:bg-zinc-900 text-zinc-500">O continuá con</span>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => signIn("google", { callbackUrl: "/admin" })}
+                        className="w-full h-12 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 rounded-2xl font-medium flex items-center justify-center gap-2 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                        <FcGoogle size={20} />
+                        Continuar con Google
+                    </button>
                 </div>
 
                 <p className="text-center text-xs text-zinc-400 mt-8">

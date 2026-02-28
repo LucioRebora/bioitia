@@ -41,7 +41,8 @@ export default function AdminBudgetsPage() {
     const load = useCallback(async (q = "", date = "") => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/budgets?q=${encodeURIComponent(q)}&date=${date}`);
+            const labId = localStorage.getItem('selectedLaboratoryId') || '';
+            const res = await fetch(`/api/budgets?q=${encodeURIComponent(q)}&date=${date}&labId=${labId}`);
             const data = await res.json();
             setBudgets(data);
         } finally {
@@ -195,105 +196,107 @@ export default function AdminBudgetsPage() {
                     {loading ? (
                         <div className="p-20 text-center text-zinc-400 text-sm">Cargando presupuestos...</div>
                     ) : (
-                        <table className="w-full text-left text-sm">
-                            <thead>
-                                <tr className="border-b border-zinc-100 dark:border-zinc-800">
-                                    <th className="px-5 py-4 font-semibold text-zinc-500">Paciente</th>
-                                    <th className="px-5 py-4 font-semibold text-zinc-500">Plan</th>
-                                    <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Total</th>
-                                    <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Enviado</th>
-                                    <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Fecha</th>
-                                    <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {budgets.length > 0 ? (
-                                    budgets.map((budget) => (
-                                        <tr
-                                            key={budget.id}
-                                            className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
-                                        >
-                                            <td className="px-5 py-3">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-                                                        <User size={14} className="text-zinc-500" />
-                                                    </div>
-                                                    <span className="font-medium">{budget.paciente || "Sin nombre"}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium">
-                                                    {budget.planNombre || "Personalizado"}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3 text-right font-bold text-zinc-700 dark:text-zinc-200">
-                                                ${budget.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="px-5 py-3 text-center">
-                                                {budget.sentAt ? (
-                                                    <div className="flex flex-col items-center gap-0.5" title={formatDate(budget.sentAt)}>
-                                                        <div className="flex items-center gap-1 text-blue-500 font-bold text-[10px] uppercase">
-                                                            <Mail size={10} />
-                                                            Enviado
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-sm min-w-[800px]">
+                                <thead>
+                                    <tr className="border-b border-zinc-100 dark:border-zinc-800">
+                                        <th className="px-5 py-4 font-semibold text-zinc-500">Paciente</th>
+                                        <th className="px-5 py-4 font-semibold text-zinc-500">Plan</th>
+                                        <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Total</th>
+                                        <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Enviado</th>
+                                        <th className="px-5 py-4 font-semibold text-zinc-500 text-center">Fecha</th>
+                                        <th className="px-5 py-4 font-semibold text-zinc-500 text-right">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {budgets.length > 0 ? (
+                                        budgets.map((budget) => (
+                                            <tr
+                                                key={budget.id}
+                                                className="border-b border-zinc-50 dark:border-zinc-800/50 hover:bg-zinc-50 dark:hover:bg-zinc-800/30 transition-colors"
+                                            >
+                                                <td className="px-5 py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-8 h-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
+                                                            <User size={14} className="text-zinc-500" />
                                                         </div>
-                                                        <span className="text-[10px] text-zinc-400 font-medium">
-                                                            {new Date(budget.sentAt).toLocaleString('es-AR', {
-                                                                day: '2-digit',
-                                                                month: '2-digit',
-                                                                year: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                                hour12: false
-                                                            })}
-                                                        </span>
+                                                        <span className="font-medium">{budget.paciente || "Sin nombre"}</span>
                                                     </div>
-                                                ) : (
-                                                    <span className="text-zinc-300">-</span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-3 text-center text-zinc-500 text-xs text-nowrap">
-                                                <div className="flex items-center justify-center gap-1.5">
-                                                    <Calendar size={12} />
-                                                    {formatDate(budget.createdAt)}
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-3">
-                                                <div className="flex items-center justify-end gap-1">
-                                                    <button
-                                                        onClick={() => handleViewDetails(budget)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                                                        title="Ver detalles"
-                                                    >
-                                                        <Eye size={14} />
-                                                    </button>
-                                                    <button
-                                                        className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-500 transition-colors disabled:opacity-50"
-                                                        title="Enviar por email"
-                                                        onClick={() => handleSendEmail(budget)}
-                                                        disabled={sendingEmailId === budget.id}
-                                                    >
-                                                        {sendingEmailId === budget.id ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setConfirmDelete(budget)}
-                                                        className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-500 transition-colors"
-                                                        title="Eliminar"
-                                                    >
-                                                        <Trash2 size={13} />
-                                                    </button>
-                                                </div>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-lg text-xs font-medium">
+                                                        {budget.planNombre || "Personalizado"}
+                                                    </span>
+                                                </td>
+                                                <td className="px-5 py-3 text-right font-bold text-zinc-700 dark:text-zinc-200">
+                                                    ${budget.total.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                                                </td>
+                                                <td className="px-5 py-3 text-center">
+                                                    {budget.sentAt ? (
+                                                        <div className="flex flex-col items-center gap-0.5" title={formatDate(budget.sentAt)}>
+                                                            <div className="flex items-center gap-1 text-blue-500 font-bold text-[10px] uppercase">
+                                                                <Mail size={10} />
+                                                                Enviado
+                                                            </div>
+                                                            <span className="text-[10px] text-zinc-400 font-medium">
+                                                                {new Date(budget.sentAt).toLocaleString('es-AR', {
+                                                                    day: '2-digit',
+                                                                    month: '2-digit',
+                                                                    year: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                    hour12: false
+                                                                })}
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-zinc-300">-</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-5 py-3 text-center text-zinc-500 text-xs text-nowrap">
+                                                    <div className="flex items-center justify-center gap-1.5">
+                                                        <Calendar size={12} />
+                                                        {formatDate(budget.createdAt)}
+                                                    </div>
+                                                </td>
+                                                <td className="px-5 py-3">
+                                                    <div className="flex items-center justify-end gap-1">
+                                                        <button
+                                                            onClick={() => handleViewDetails(budget)}
+                                                            className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                                            title="Ver detalles"
+                                                        >
+                                                            <Eye size={14} />
+                                                        </button>
+                                                        <button
+                                                            className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-500 hover:bg-blue-50 dark:hover:bg-blue-950/30 hover:text-blue-500 transition-colors disabled:opacity-50"
+                                                            title="Enviar por email"
+                                                            onClick={() => handleSendEmail(budget)}
+                                                            disabled={sendingEmailId === budget.id}
+                                                        >
+                                                            {sendingEmailId === budget.id ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setConfirmDelete(budget)}
+                                                            className="w-8 h-8 flex items-center justify-center rounded-xl text-zinc-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 hover:text-rose-500 transition-colors"
+                                                            title="Eliminar"
+                                                        >
+                                                            <Trash2 size={13} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : (
+                                        <tr>
+                                            <td colSpan={5} className="p-20 text-center text-zinc-400">
+                                                {search ? `Sin resultados para "${search}"` : "No hay presupuestos generados."}
                                             </td>
                                         </tr>
-                                    ))
-                                ) : (
-                                    <tr>
-                                        <td colSpan={5} className="p-20 text-center text-zinc-400">
-                                            {search ? `Sin resultados para "${search}"` : "No hay presupuestos generados."}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                     )}
                 </div>
             </div>

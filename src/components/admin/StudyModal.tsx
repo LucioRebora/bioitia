@@ -71,6 +71,8 @@ export function StudyModal({ study, open, onClose, onSaved }: StudyModalProps) {
         const url = isEdit ? `/api/studies/${study!.id}` : "/api/studies";
         const method = isEdit ? "PATCH" : "POST";
 
+        const labId = localStorage.getItem('selectedLaboratoryId') || '';
+
         const res = await fetch(url, {
             method,
             headers: { "Content-Type": "application/json" },
@@ -79,6 +81,7 @@ export function StudyModal({ study, open, onClose, onSaved }: StudyModalProps) {
                 codigo: Number(data.codigo),
                 ub: Number(data.ub),
                 urgencia: Boolean(data.urgencia),
+                labId
             }),
         });
 

@@ -17,7 +17,8 @@ export default function AdminStudiesPage() {
     const load = useCallback(async (q = "") => {
         setLoading(true);
         try {
-            const res = await fetch(`/api/studies?q=${encodeURIComponent(q)}`);
+            const labId = localStorage.getItem('selectedLaboratoryId') || '';
+            const res = await fetch(`/api/studies?q=${encodeURIComponent(q)}&labId=${labId}`);
             const data = await res.json();
             setStudies(data);
         } finally {

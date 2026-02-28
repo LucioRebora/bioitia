@@ -1,18 +1,31 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 export async function GET(req: Request) {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
         const { searchParams } = new URL(req.url);
         const q = searchParams.get("q") ?? "";
+        const requestedLabId = searchParams.get("labId");
         const query = `%${q}%`;
 
-        // Usamos queryRaw para poder castear el código numérico a texto y buscar parcialmente
+        const isAdmin = session.user.role === "ADMIN";
+        const targetLabId = (isAdmin && requestedLabId) ? requestedLabId : session.user.laboratoryId;
+
+        if (!targetLabId) {
+            return new NextResponse("Unauthorized / No laboratory selected", { status: 400 });
+        }
+
         const studies = await prisma.$queryRaw`
             SELECT * FROM "Study"
-            WHERE "determinacion" ILIKE ${query}
+            WHERE ("determinacion" ILIKE ${query}
                OR "frecuencia" ILIKE ${query}
-               OR CAST("codigo" AS TEXT) LIKE ${query}
+               OR CAST("codigo" AS TEXT) LIKE ${query})
+              AND "laboratoryId" = ${targetLabId}
             ORDER BY "codigo" ASC
         `;
 
@@ -25,8 +38,20 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
+        const session = await getServerSession(authOptions);
+        if (!session) {
+            return new NextResponse("Unauthorized", { status: 401 });
+        }
+
         const body = await req.json();
-        const { codigo, determinacion, urgencia, ref, ub, frecuencia } = body;
+        const { codigo, determinacion, urgencia, ref, ub, frecuencia, labId } = body;
+
+        const isAdmin = session.user.role === "ADMIN";
+        const targetLabId = (isAdmin && labId) ? labId : session.user.laboratoryId;
+
+        if (!targetLabId) {
+            return new NextResponse("Unauthorized / Laboratory required", { status: 400 });
+        }
 
         const study = await prisma.study.create({
             data: {
@@ -36,7 +61,8 @@ export async function POST(req: Request) {
                 ref: ref ? String(ref) : null,
                 ub: Number(ub),
                 frecuencia: frecuencia ? String(frecuencia) : null,
-            },
+                laboratoryId: targetLabId,
+            } as any,
         });
 
         return NextResponse.json(study, { status: 201 });
