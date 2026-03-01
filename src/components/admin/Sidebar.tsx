@@ -48,6 +48,11 @@ const navItems = [
         icon: Settings,
         subItems: [
             {
+                label: "Laboratorio",
+                href: "/admin/perfil-laboratorio",
+                icon: Building2,
+            },
+            {
                 label: "Estudios",
                 href: "/admin/estudios",
                 icon: FlaskConical,

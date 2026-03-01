@@ -32,8 +32,12 @@ export async function PUT(
     try {
         const { id } = await params;
         const session = await getServerSession(authOptions);
-        if (!session || session.user.role !== 'ADMIN') {
-            return new NextResponse("Unauthorized", { status: 401 });
+        if (!session) return new NextResponse("Unauthorized", { status: 401 });
+
+        if (session.user.role !== 'ADMIN') {
+            if (session.user.role !== 'LAB_ADMIN' || session.user.laboratoryId !== id) {
+                return new NextResponse("Unauthorized to update this laboratory", { status: 403 });
+            }
         }
 
         const data = await request.json();
@@ -51,7 +55,7 @@ export async function PUT(
                 telefono: data.telefono || null,
                 sitioWeb: data.sitioWeb || null,
                 logo: data.logo || null,
-            },
+            } as any,
         });
 
         return NextResponse.json(laboratory);
