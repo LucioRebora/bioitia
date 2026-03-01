@@ -12,19 +12,25 @@ export default function AdminUsersPage() {
     const [modalOpen, setModalOpen] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState<User | null>(null);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [labs, setLabs] = useState<any[]>([]);
 
-    const loadUsers = useCallback(async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/users");
-            const data = await res.json();
-            setUsers(data);
+            const [usersRes, labsRes] = await Promise.all([
+                fetch("/api/users"),
+                fetch("/api/laboratories")
+            ]);
+            const usersData = await usersRes.json();
+            const labsData = await labsRes.json();
+            setUsers(usersData);
+            setLabs(Array.isArray(labsData) ? labsData : []);
         } finally {
             setLoading(false);
         }
     }, []);
 
-    useEffect(() => { loadUsers(); }, [loadUsers]);
+    useEffect(() => { loadData(); }, [loadData]);
 
     const handleEdit = (user: User) => {
         setEditingUser(user);
@@ -180,6 +186,7 @@ export default function AdminUsersPage() {
             {/* Edit Modal */}
             <EditUserModal
                 user={editingUser}
+                laboratories={labs}
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
                 onSaved={handleSaved}

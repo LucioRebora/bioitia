@@ -10,6 +10,7 @@ const USER_SELECT = {
     name: true,
     role: true,
     active: true,
+    image: true,
     createdAt: true,
     laboratory: {
         select: {
@@ -28,18 +29,42 @@ export async function PATCH(
         const session = await getServerSession(authOptions);
         if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
+        const userToUpdate = await prisma.user.findUnique({ where: { id } });
+        if (!userToUpdate) return new NextResponse("Not found", { status: 404 });
+
+        if (session.user.role !== "ADMIN") {
+            if (userToUpdate.role === "ADMIN") {
+                return new NextResponse("Unauthorized to modify ADMIN user", { status: 403 });
+            }
+            if (userToUpdate.laboratoryId !== session.user.laboratoryId) {
+                return new NextResponse("Unauthorized to modify this user", { status: 403 });
+            }
+        }
+
         const body = await req.json();
-        const { name, email, role, password, active } = body;
+        const { name, email, role, password, active, laboratoryId, image } = body;
 
         if (role === "ADMIN" && session.user.role !== "ADMIN") {
             return new NextResponse("Unauthorized to assign ADMIN role", { status: 403 });
         }
 
-        const data: Record<string, string | boolean> = {};
+        const data: Record<string, string | boolean | null> = {};
         if (name !== undefined) data.name = name;
         if (email !== undefined) data.email = email;
         if (role !== undefined) data.role = role;
         if (active !== undefined) data.active = Boolean(active);
+        if (image !== undefined) data.image = image;
+
+        if (session.user.role === "ADMIN" && laboratoryId !== undefined) {
+            data.laboratoryId = laboratoryId || null;
+        }
+
+        if (data.role && data.role !== "ADMIN") {
+            const userLabId = data.laboratoryId !== undefined ? data.laboratoryId : userToUpdate.laboratoryId;
+            if (!userLabId) {
+                return new NextResponse("Laboratory is required for non-ADMIN users", { status: 400 });
+            }
+        }
         if (password && String(password).length > 0) {
             data.password = await bcrypt.hash(password, 12);
         }
@@ -66,11 +91,14 @@ export async function DELETE(
         const session = await getServerSession(authOptions);
         if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
-        // optionally: ensure LAB_ADMIN can only delete their own lab's users
+        // ensure LAB_ADMIN can only delete their own lab's users and cannot delete ADMINs
         if (session.user.role !== "ADMIN") {
             const userToDelete = await prisma.user.findUnique({ where: { id } });
             if (!userToDelete || userToDelete.laboratoryId !== session.user.laboratoryId) {
                 return new NextResponse("Unauthorized to delete this user", { status: 403 });
+            }
+            if (userToDelete.role === "ADMIN") {
+                return new NextResponse("Unauthorized to delete ADMIN user", { status: 403 });
             }
         }
 

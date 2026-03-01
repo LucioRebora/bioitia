@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Loader2, Save } from "lucide-react";
+import { X, Loader2, Save, UserCircle, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const userSchema = z.object({
@@ -14,6 +14,16 @@ const userSchema = z.object({
     email: z.string().email("Email inválido"),
     role: z.enum(["USER", "LAB_ADMIN", "ADMIN"]),
     password: z.string().optional(),
+    laboratoryId: z.string().optional(),
+    image: z.string().optional(),
+}).refine((data) => {
+    if (data.role !== "ADMIN" && !data.laboratoryId) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Debe asignar un laboratorio para este rol",
+    path: ["laboratoryId"]
 });
 
 type UserValues = z.infer<typeof userSchema>;
@@ -24,6 +34,7 @@ export interface User {
     name: string | null;
     role: string;
     active: boolean;
+    image?: string | null;
     createdAt: string;
     laboratory?: {
         id: string;
@@ -33,12 +44,14 @@ export interface User {
 
 interface EditUserModalProps {
     user: User | null;
+    laboratories: { id: string, nombre: string }[];
     open: boolean;
+    isProfile?: boolean;
     onClose: () => void;
     onSaved: (updated: User) => void;
 }
 
-export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalProps) {
+export function EditUserModal({ user, laboratories, open, isProfile, onClose, onSaved }: EditUserModalProps) {
     const { data: session } = useSession();
     const isEditing = !!user;
 
@@ -46,6 +59,8 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
         register,
         handleSubmit,
         reset,
+        watch,
+        setValue,
         formState: { errors, isSubmitting },
     } = useForm<UserValues>({
         resolver: zodResolver(userSchema),
@@ -60,6 +75,8 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                     email: user.email,
                     role: user.role as any,
                     password: "",
+                    laboratoryId: user.laboratory?.id || "",
+                    image: user.image || "",
                 });
             } else {
                 reset({
@@ -67,6 +84,8 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                     email: "",
                     role: "USER",
                     password: "",
+                    laboratoryId: "",
+                    image: "",
                 });
             }
         }
@@ -78,6 +97,13 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
             email: data.email,
             role: data.role,
         };
+
+        if (data.laboratoryId) {
+            payload.laboratoryId = data.laboratoryId;
+        }
+        if (data.image) {
+            payload.image = data.image;
+        }
 
         if (data.password && data.password.length > 0) {
             payload.password = data.password;
@@ -117,6 +143,24 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                 : "border-zinc-200 dark:border-zinc-700"
         );
 
+    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            // Check size (max 2MB)
+            if (file.size > 2 * 1024 * 1024) {
+                alert("La imagen no debe superar los 2MB.");
+                return;
+            }
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setValue("image", reader.result as string, { shouldDirty: true });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const currentImage = watch("image");
+
     return (
         <AnimatePresence>
             {open && (
@@ -145,9 +189,9 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                             {/* Header */}
                             <div className="flex items-center justify-between mb-8">
                                 <div>
-                                    <h2 className="text-xl font-bold">{isEditing ? "Editar Usuario" : "Nuevo Usuario"}</h2>
+                                    <h2 className="text-xl font-bold">{isProfile ? "Mi Perfil" : isEditing ? "Editar Usuario" : "Nuevo Usuario"}</h2>
                                     <p className="text-sm text-zinc-500 mt-0.5">
-                                        {isEditing ? user.email : "Crea una nueva cuenta de acceso"}
+                                        {isProfile ? "Actualiza tu información personal" : isEditing ? user.email : "Crea una nueva cuenta de acceso"}
                                     </p>
                                 </div>
                                 <button
@@ -159,6 +203,30 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                             </div>
 
                             <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+                                {/* Avatar (sólo si es Mi Perfil) */}
+                                {isProfile && (
+                                    <div className="flex flex-col items-center justify-center space-y-3 pb-2">
+                                        <div className="relative group cursor-pointer w-24 h-24 rounded-full border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 shadow-sm overflow-hidden flex items-center justify-center">
+                                            {currentImage ? (
+                                                <img src={currentImage} alt="Avatar" className="w-full h-full object-cover" />
+                                            ) : (
+                                                <UserCircle size={48} className="text-zinc-400" />
+                                            )}
+                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                                                <Upload size={20} className="text-white" />
+                                            </div>
+                                            <input type="hidden" {...register("image")} />
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                        </div>
+                                        <span className="text-xs text-zinc-500">Cambiar Avatar (Max 2MB)</span>
+                                    </div>
+                                )}
+
                                 {/* Nombre */}
                                 <div className="space-y-1.5">
                                     <label className="text-sm font-medium text-zinc-500">Nombre</label>
@@ -179,7 +247,8 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                         {...register("email")}
                                         type="email"
                                         placeholder="email@ejemplo.com"
-                                        className={inputClass(!!errors.email)}
+                                        disabled={isProfile}
+                                        className={cn(inputClass(!!errors.email), isProfile && "pointer-events-none opacity-60 bg-zinc-100 dark:bg-zinc-800/50")}
                                     />
                                     {errors.email && (
                                         <p className="text-xs text-rose-500 px-1">{errors.email.message}</p>
@@ -187,19 +256,21 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                 </div>
 
                                 {/* Rol */}
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium text-zinc-500">Rol</label>
-                                    <select
-                                        {...register("role")}
-                                        className={inputClass(!!errors.role)}
-                                    >
-                                        <option value="USER">Usuario (Por defecto)</option>
-                                        <option value="LAB_ADMIN">Laboratorio Admin</option>
-                                        {session?.user?.role === "ADMIN" && (
-                                            <option value="ADMIN">Administrador</option>
-                                        )}
-                                    </select>
-                                </div>
+                                {!isProfile && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-zinc-500">Rol</label>
+                                        <select
+                                            {...register("role")}
+                                            className={inputClass(!!errors.role)}
+                                        >
+                                            <option value="USER">Usuario (Por defecto)</option>
+                                            <option value="LAB_ADMIN">Laboratorio Admin</option>
+                                            {session?.user?.role === "ADMIN" && (
+                                                <option value="ADMIN">Administrador</option>
+                                            )}
+                                        </select>
+                                    </div>
+                                )}
 
                                 {/* Contraseña (opcional) */}
                                 <div className="space-y-1.5">
@@ -214,6 +285,25 @@ export function EditUserModal({ user, open, onClose, onSaved }: EditUserModalPro
                                         className={inputClass(false)}
                                     />
                                 </div>
+
+                                {/* Laboratorio */}
+                                {!isProfile && session?.user?.role === "ADMIN" && watch("role") !== "ADMIN" && (
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-zinc-500">Laboratorio</label>
+                                        <select
+                                            {...register("laboratoryId")}
+                                            className={inputClass(!!errors.laboratoryId)}
+                                        >
+                                            <option value="">Ninguno / Seleccione...</option>
+                                            {laboratories.map((lab) => (
+                                                <option key={lab.id} value={lab.id}>{lab.nombre}</option>
+                                            ))}
+                                        </select>
+                                        {errors.laboratoryId && (
+                                            <p className="text-xs text-rose-500 px-1">{errors.laboratoryId.message}</p>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Footer */}
                                 <div className="flex gap-3 pt-2">

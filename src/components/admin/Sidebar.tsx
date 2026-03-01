@@ -21,8 +21,10 @@ import {
     Menu,
     X,
     Building2,
+    Pencil,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EditUserModal, type User } from "@/components/admin/EditUserModal";
 
 const navItems = [
     {
@@ -66,13 +68,15 @@ const navItems = [
 
 
 export function Sidebar() {
-    const { data: session } = useSession();
+    const { data: session, update } = useSession();
     const pathname = usePathname();
     const [collapsed, setCollapsed] = useState(false);
     const [configOpen, setConfigOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [labs, setLabs] = useState<any[]>([]);
     const [activeLabId, setActiveLabId] = useState<string>("");
+    const [meModalOpen, setMeModalOpen] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
     useEffect(() => {
         setMobileOpen(false);
@@ -91,7 +95,18 @@ export function Sidebar() {
             }
         };
 
+        const fetchMe = async () => {
+            try {
+                const res = await fetch('/api/users/me');
+                const data = await res.json();
+                if (data?.image) setAvatarUrl(data.image);
+            } catch (error) {
+                console.error("Error fetching me:", error);
+            }
+        }
+
         fetchLabs();
+        fetchMe();
 
         // Load initially selected laboratory for Admin, or set the default one
         const savedLab = localStorage.getItem('selectedLaboratoryId');
@@ -344,9 +359,20 @@ export function Sidebar() {
                         collapsed ? "flex-col py-4 gap-4" : "flex-row"
                     )}>
                         {/* User Info */}
-                        <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                                <UserCircle size={20} className="text-zinc-500" />
+                        <div
+                            className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800 p-1.5 rounded-xl transition-colors group"
+                            onClick={() => setMeModalOpen(true)}
+                            title="Editar mi perfil"
+                        >
+                            <div className="w-8 h-8 rounded-full bg-white dark:bg-zinc-800 flex items-center justify-center shrink-0 border border-zinc-200 dark:border-zinc-700 shadow-sm relative overflow-hidden">
+                                {avatarUrl ? (
+                                    <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                                ) : (
+                                    <UserCircle size={20} className="text-zinc-500" />
+                                )}
+                                <div className="absolute -bottom-1 -right-1 bg-white dark:bg-zinc-900 rounded-full border border-zinc-200 dark:border-zinc-700 w-4 h-4 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                    <Pencil size={9} className="text-zinc-500" />
+                                </div>
                             </div>
                             {!collapsed && (
                                 <div className="flex flex-col min-w-0">
@@ -391,6 +417,32 @@ export function Sidebar() {
                     )}
                 </button>
             </motion.aside>
+
+            {/* Profile Edit Modal */}
+            <EditUserModal
+                user={session?.user && (session.user as any).id ? {
+                    id: (session.user as any).id,
+                    email: session.user.email || "",
+                    name: session.user.name || null,
+                    role: (session.user as any).role || "USER",
+                    active: true,
+                    image: avatarUrl,
+                    createdAt: new Date().toISOString(),
+                    laboratory: userLab
+                } : null}
+                laboratories={labs}
+                open={meModalOpen}
+                isProfile={true}
+                onClose={() => setMeModalOpen(false)}
+                onSaved={async (updated) => {
+                    setMeModalOpen(false);
+                    // Force session update
+                    if (updated.image) setAvatarUrl(updated.image);
+                    await update({ name: updated.name });
+                    // Give it a small delay for cookie to sync, though mostly local state handles it now
+                    setTimeout(() => window.location.reload(), 150);
+                }}
+            />
         </>
     );
 }

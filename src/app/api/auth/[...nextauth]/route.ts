@@ -68,7 +68,10 @@ export const authOptions: NextAuthOptions = {
             }
             return true;
         },
-        async jwt({ token, user, account }) {
+        async jwt({ token, user, account, trigger, session }) {
+            if (trigger === "update" && session) {
+                if (session.name !== undefined) token.name = session.name;
+            }
             if (user) {
                 token.id = user.id;
                 // Preserve role and param added from sign in callback or credentials logic
