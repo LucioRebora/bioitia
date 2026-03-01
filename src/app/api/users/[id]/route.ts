@@ -11,6 +11,7 @@ const USER_SELECT = {
     role: true,
     active: true,
     image: true,
+    telefono: true,
     createdAt: true,
     laboratory: {
         select: {
@@ -42,7 +43,7 @@ export async function PATCH(
         }
 
         const body = await req.json();
-        const { name, email, role, password, active, laboratoryId, image } = body;
+        const { name, email, role, password, active, laboratoryId, image, telefono } = body;
 
         if (role === "ADMIN" && session.user.role !== "ADMIN") {
             return new NextResponse("Unauthorized to assign ADMIN role", { status: 403 });
@@ -54,12 +55,15 @@ export async function PATCH(
         if (role !== undefined) data.role = role;
         if (active !== undefined) data.active = Boolean(active);
         if (image !== undefined) data.image = image;
+        if (telefono !== undefined) data.telefono = telefono;
 
         if (session.user.role === "ADMIN" && laboratoryId !== undefined) {
             data.laboratoryId = laboratoryId || null;
         }
 
-        if (data.role && data.role !== "ADMIN") {
+        if (data.role === "ADMIN") {
+            data.laboratoryId = null;
+        } else if (data.role && data.role !== "ADMIN") {
             const userLabId = data.laboratoryId !== undefined ? data.laboratoryId : userToUpdate.laboratoryId;
             if (!userLabId) {
                 return new NextResponse("Laboratory is required for non-ADMIN users", { status: 400 });

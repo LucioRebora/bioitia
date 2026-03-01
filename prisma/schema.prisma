@@ -35,6 +35,7 @@ model User {
   role         String   @default("USER")
   active       Boolean  @default(true)
   image        String?  @db.Text
+  telefono     String?
   laboratoryId String?
   laboratory   Laboratory? @relation(fields: [laboratoryId], references: [id])
   createdAt    DateTime @default(now())

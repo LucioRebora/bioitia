@@ -17,8 +17,10 @@ export default function AdminUsersPage() {
     const loadData = useCallback(async () => {
         setLoading(true);
         try {
+            const savedLab = localStorage.getItem('selectedLaboratoryId');
+            const url = savedLab ? `/api/users?laboratoryId=${savedLab}` : "/api/users";
             const [usersRes, labsRes] = await Promise.all([
-                fetch("/api/users"),
+                fetch(url),
                 fetch("/api/laboratories")
             ]);
             const usersData = await usersRes.json();

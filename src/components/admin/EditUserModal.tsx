@@ -16,6 +16,14 @@ const userSchema = z.object({
     password: z.string().optional(),
     laboratoryId: z.string().optional(),
     image: z.string().optional(),
+    telefono: z.string().optional().refine((val) => {
+        if (!val) return true;
+        // Permite el formato con o sin espacios: +549116680505
+        const digitsOnly = val.replace(/\s+/g, '');
+        return /^\+\d{10,15}$/.test(digitsOnly);
+    }, {
+        message: "Formato inválido. Ej: +549116680505"
+    }),
 }).refine((data) => {
     if (data.role !== "ADMIN" && !data.laboratoryId) {
         return false;
@@ -35,6 +43,7 @@ export interface User {
     role: string;
     active: boolean;
     image?: string | null;
+    telefono?: string | null;
     createdAt: string;
     laboratory?: {
         id: string;
@@ -77,6 +86,7 @@ export function EditUserModal({ user, laboratories, open, isProfile, onClose, on
                     password: "",
                     laboratoryId: user.laboratory?.id || "",
                     image: user.image || "",
+                    telefono: user.telefono || "",
                 });
             } else {
                 reset({
@@ -86,6 +96,7 @@ export function EditUserModal({ user, laboratories, open, isProfile, onClose, on
                     password: "",
                     laboratoryId: "",
                     image: "",
+                    telefono: "",
                 });
             }
         }
@@ -97,6 +108,8 @@ export function EditUserModal({ user, laboratories, open, isProfile, onClose, on
             email: data.email,
             role: data.role,
         };
+
+        if (data.telefono) payload.telefono = data.telefono;
 
         if (data.laboratoryId) {
             payload.laboratoryId = data.laboratoryId;
@@ -252,6 +265,20 @@ export function EditUserModal({ user, laboratories, open, isProfile, onClose, on
                                     />
                                     {errors.email && (
                                         <p className="text-xs text-rose-500 px-1">{errors.email.message}</p>
+                                    )}
+                                </div>
+
+                                {/* Teléfono */}
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-zinc-500">Teléfono <span className="text-zinc-400 font-normal">(opcional)</span></label>
+                                    <input
+                                        {...register("telefono")}
+                                        type="tel"
+                                        placeholder="+549116680505"
+                                        className={inputClass(!!errors.telefono)}
+                                    />
+                                    {errors.telefono && (
+                                        <p className="text-xs text-rose-500 px-1">{errors.telefono.message}</p>
                                     )}
                                 </div>
 

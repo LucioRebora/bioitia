@@ -11,6 +11,7 @@ const USER_SELECT = {
     role: true,
     active: true,
     image: true,
+    telefono: true,
     createdAt: true,
     laboratory: {
         select: {
@@ -20,12 +21,28 @@ const USER_SELECT = {
     },
 } as const;
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
         const session = await getServerSession(authOptions);
         if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
-        const whereClause = session.user.role === "ADMIN" ? {} : { laboratoryId: session.user.laboratoryId, role: { not: "ADMIN" } };
+        const { searchParams } = new URL(req.url);
+        const labId = searchParams.get("laboratoryId");
+
+        let whereClause: any = {};
+
+        if (session.user.role === "ADMIN") {
+            if (labId) {
+                whereClause = {
+                    OR: [
+                        { laboratoryId: labId },
+                        { role: "ADMIN" }
+                    ]
+                };
+            }
+        } else {
+            whereClause = { laboratoryId: session.user.laboratoryId, role: { not: "ADMIN" } };
+        }
 
         const users = await prisma.user.findMany({
             where: whereClause as any,
@@ -45,16 +62,20 @@ export async function POST(req: Request) {
         if (!session) return new NextResponse("Unauthorized", { status: 401 });
 
         const body = await req.json();
-        const { email, name, role, password, laboratoryId, image } = body;
+        const { email, name, role, password, laboratoryId, image, telefono } = body;
 
         if (role === "ADMIN" && session.user.role !== "ADMIN") {
             return new NextResponse("Unauthorized to assign ADMIN role", { status: 403 });
         }
 
         // Use the user's laboratoryId unless they are ADMIN specifying one
-        const assignedLaboratoryId = session.user.role === "ADMIN" && laboratoryId
+        let assignedLaboratoryId = session.user.role === "ADMIN" && laboratoryId
             ? laboratoryId
             : session.user.laboratoryId;
+
+        if (role === "ADMIN") {
+            assignedLaboratoryId = null;
+        }
 
         if (role !== "ADMIN" && !assignedLaboratoryId) {
             return new NextResponse("Laboratory is required for non-ADMIN users", { status: 400 });
@@ -62,7 +83,7 @@ export async function POST(req: Request) {
 
         const hashed = await bcrypt.hash(password, 12);
         const user = await prisma.user.create({
-            data: { email, name, role: role || "USER", password: hashed, laboratoryId: assignedLaboratoryId, image } as any,
+            data: { email, name, role: role || "USER", password: hashed, laboratoryId: assignedLaboratoryId, image, telefono } as any,
             select: USER_SELECT,
         });
 
